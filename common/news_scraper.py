@@ -121,13 +121,22 @@ def discover_article_urls(homepage, robots_cache, max_urls, log_prefix=""):
     seen_sitemaps = set()
     declared = list(robots_cache.sitemaps(homepage))
     fallback = [urljoin(homepage, p) for p in FALLBACK_SITEMAP_PATHS]
-    frontier = [(u, 0) for u in declared] + [(u, 0) for u in fallback if u not in declared]
+    # is_guess distinguishes robots.txt-declared sitemaps and the real
+    # children discovered inside them (failure there is a genuine signal
+    # something's wrong, e.g. rate-limiting) from speculatively-guessed
+    # common paths (failure there, usually a 404, is the expected normal
+    # case for a path that just doesn't exist on this site). Only "real"
+    # failures count toward the circuit breaker below -- counting guess
+    # 404s too was a bug: three unrelated guessed-path 404s could trip the
+    # breaker right as it reached a site's real (and working) archive,
+    # discarding hundreds of legitimate child sitemaps for no reason.
+    frontier = [(u, 0, False) for u in declared] + [(u, 0, True) for u in fallback if u not in declared]
 
     found = []
     found_set = set()
     consecutive_failures = 0
     while frontier and len(found) < max_urls:
-        sitemap_url, depth = frontier.pop(0)
+        sitemap_url, depth, is_guess = frontier.pop(0)
         if sitemap_url in seen_sitemaps or depth > MAX_SITEMAP_DEPTH:
             continue
         seen_sitemaps.add(sitemap_url)
@@ -137,21 +146,24 @@ def discover_article_urls(homepage, robots_cache, max_urls, log_prefix=""):
             raw = _fetch_bytes(sitemap_url, headers)
         except Exception as e:
             print(f"{log_prefix}  [sitemap fetch failed] {sitemap_url}: {e}", flush=True)
+            if is_guess:
+                continue
             consecutive_failures += 1
             if consecutive_failures >= MAX_CONSECUTIVE_SITEMAP_FAILURES:
+                real_remaining = sum(1 for _, _, g in frontier if not g)
                 print(f"{log_prefix}  [sitemap] giving up on remaining "
-                      f"{len(frontier):,} queued sitemaps after "
+                      f"{real_remaining:,} real queued sitemaps after "
                       f"{consecutive_failures} consecutive failures "
                       f"(likely rate-limited); keeping {len(found):,} urls found so far",
                       flush=True)
-                break
+                frontier = [(u, d, g) for u, d, g in frontier if g]  # keep only guesses
             continue
         consecutive_failures = 0
         if not _looks_like_xml(raw):
             continue  # fallback-guessed path resolved to an HTML page, not a real sitemap
         children, pages = _parse_sitemap_xml(raw)
         for c in children:
-            frontier.append((c, depth + 1))
+            frontier.append((c, depth + 1, is_guess))
         for p in pages:
             if p in found_set:
                 continue
