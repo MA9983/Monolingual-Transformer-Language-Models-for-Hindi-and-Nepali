@@ -23,6 +23,8 @@ Design choices, and why:
 import hashlib
 import json
 import os
+import queue
+import threading
 import time
 from urllib.parse import urljoin, urlparse
 
@@ -52,6 +54,13 @@ NON_ARTICLE_PATTERNS = (
 )
 MIN_ARTICLE_CHARS = 300
 MAX_SITEMAP_DEPTH = 3
+# Each worker independently paces itself at the site's own crawl-delay
+# (e.g. 1 request/2s each), so N workers on one site achieve roughly N
+# times the aggregate throughput while no single connection ever exceeds
+# the polite per-connection rate -- the same model Scrapy's
+# CONCURRENT_REQUESTS_PER_DOMAIN uses. Kept modest (not dozens) so this
+# stays "friendly low-speed" in aggregate, not a burst hammering one site.
+WORKERS_PER_SITE = 3
 
 # Many sites host a sitemap/feed without declaring it in robots.txt, so these
 # common paths are always tried in addition to whatever robots.txt lists.
@@ -249,6 +258,78 @@ class NewsCollector:
                                     include_comments=False, include_tables=False)
         return text
 
+    def _worker(self, site, url_queue, stop_event, t0):
+        """One of WORKERS_PER_SITE threads for this site: pulls URLs off
+        its site's queue, paces itself independently at the site's own
+        crawl-delay, and commits kept articles under self.lock. Multiple
+        workers per site is what turns the per-site crawl-delay into real
+        aggregate throughput instead of a single-threaded ceiling.
+        """
+        next_allowed = 0.0
+        while not stop_event.is_set():
+            try:
+                url = url_queue.get_nowait()
+            except queue.Empty:
+                return
+
+            wait = next_allowed - time.time()
+            if wait > 0:
+                time.sleep(wait)
+            delay = self.robots.crawl_delay(site["homepage"])
+            next_allowed = time.time() + delay
+
+            with self.lock:
+                if url in self.seen_urls:
+                    continue
+                self.seen_urls.add(url)
+                self.seen_f.write(url + "\n")
+                self.seen_f.flush()
+
+            if not self.robots.can_fetch(url):
+                continue
+            try:
+                text = self._fetch_and_extract(url)
+            except Exception:
+                continue
+            if not text or len(text) < MIN_ARTICLE_CHARS:
+                continue
+            h = _content_hash(text)
+            if h in self.seen_hashes:  # cheap unlocked pre-check
+                continue
+            try:
+                detected = detect(text[:1000])
+            except Exception:
+                continue
+            if detected != self.lang_code:
+                continue
+
+            with self.lock:
+                if h in self.seen_hashes:
+                    continue
+                self.seen_hashes.add(h)
+                self.text_f.write(text.strip() + "\n\n")
+                self.meta_f.write(json.dumps({
+                    "url": url, "site": site["name"], "hash": h, "n_chars": len(text),
+                }, ensure_ascii=False) + "\n")
+                self.text_f.flush()
+                self.meta_f.flush()
+
+                self.total_chars += len(text)
+                self.total_articles += 1
+                self.per_site_chars[site["name"]] += len(text)
+
+                if self.total_chars - self.last_log >= 2_000_000:
+                    self.last_log = self.total_chars
+                    elapsed = (time.time() - t0) / 60
+                    print(f"[progress] {self.total_chars/1e6:.1f}M chars "
+                          f"(~{self.total_chars/self.chars_per_token/1e6:.2f}M est. tokens), "
+                          f"{self.total_articles:,} articles, {elapsed:.1f} min elapsed, "
+                          f"per-site: {self.per_site_chars}", flush=True)
+                    self._save_progress()
+
+                if self.total_chars >= self.target_chars:
+                    stop_event.set()
+
     def collect(self):
         t0 = time.time()
         print(f"[{self.lang_code}] resume state: {self.total_chars:,} chars "
@@ -260,87 +341,42 @@ class NewsCollector:
             return
 
         # Discover a large batch of candidate URLs per site up front.
-        queues = {}
+        site_queues = {}
         for site in self.sites:
             remaining_est_chars = self.target_chars - self.total_chars
             max_urls = max(2000, int(remaining_est_chars / 1200))  # ~1200 chars/article floor estimate
             urls = discover_article_urls(site["homepage"], self.robots, max_urls,
                                           log_prefix=f"[{site['name']}]")
             urls = [u for u in urls if u not in self.seen_urls]
-            queues[site["name"]] = urls
-            print(f"[{site['name']}] {len(urls):,} new candidate urls queued", flush=True)
+            q = queue.Queue()
+            for u in urls:
+                q.put(u)
+            site_queues[site["name"]] = q
+            print(f"[{site['name']}] {len(urls):,} new candidate urls queued "
+                  f"({WORKERS_PER_SITE} workers)", flush=True)
 
-        next_allowed = {site["name"]: 0.0 for site in self.sites}
-        text_f = open(self.text_path, "a", encoding="utf-8")
-        meta_f = open(self.meta_path, "a", encoding="utf-8")
-        seen_f = open(self.seen_urls_path, "a", encoding="utf-8")
+        self.lock = threading.Lock()
+        self.last_log = self.total_chars
+        self.text_f = open(self.text_path, "a", encoding="utf-8")
+        self.meta_f = open(self.meta_path, "a", encoding="utf-8")
+        self.seen_f = open(self.seen_urls_path, "a", encoding="utf-8")
+        stop_event = threading.Event()
 
-        active_sites = [s["name"] for s in self.sites if queues[s["name"]]]
-        last_log = self.total_chars
         try:
-            while active_sites and self.total_chars < self.target_chars:
-                site_name = min(active_sites, key=lambda n: next_allowed[n])
-                wait = next_allowed[site_name] - time.time()
-                if wait > 0:
-                    time.sleep(wait)
-
-                if not queues[site_name]:
-                    active_sites.remove(site_name)
-                    continue
-                url = queues[site_name].pop(0)
-                site = next(s for s in self.sites if s["name"] == site_name)
-                delay = self.robots.crawl_delay(site["homepage"])
-                next_allowed[site_name] = time.time() + delay
-
-                self.seen_urls.add(url)
-                seen_f.write(url + "\n")
-
-                if not self.robots.can_fetch(url):
-                    continue
-                try:
-                    text = self._fetch_and_extract(url)
-                except Exception:
-                    continue
-                if not text or len(text) < MIN_ARTICLE_CHARS:
-                    continue
-                h = _content_hash(text)
-                if h in self.seen_hashes:
-                    continue
-                try:
-                    detected = detect(text[:1000])
-                except Exception:
-                    continue
-                if detected != self.lang_code:
-                    continue
-
-                self.seen_hashes.add(h)
-                text_f.write(text.strip() + "\n\n")
-                meta_f.write(json.dumps({
-                    "url": url, "site": site_name, "hash": h, "n_chars": len(text),
-                }, ensure_ascii=False) + "\n")
-                text_f.flush()
-                meta_f.flush()
-                seen_f.flush()
-
-                self.total_chars += len(text)
-                self.total_articles += 1
-                self.per_site_chars[site_name] += len(text)
-
-                if not queues[site_name]:
-                    active_sites = [n for n in active_sites if queues.get(n)]
-
-                if self.total_chars - last_log >= 2_000_000:
-                    last_log = self.total_chars
-                    elapsed = (time.time() - t0) / 60
-                    print(f"[progress] {self.total_chars/1e6:.1f}M chars "
-                          f"(~{self.total_chars/self.chars_per_token/1e6:.2f}M est. tokens), "
-                          f"{self.total_articles:,} articles, {elapsed:.1f} min elapsed, "
-                          f"per-site: {self.per_site_chars}", flush=True)
-                    self._save_progress()
+            threads = []
+            for site in self.sites:
+                for _ in range(WORKERS_PER_SITE):
+                    t = threading.Thread(target=self._worker,
+                                          args=(site, site_queues[site["name"]], stop_event, t0),
+                                          daemon=True)
+                    t.start()
+                    threads.append(t)
+            for t in threads:
+                t.join()
         finally:
-            text_f.close()
-            meta_f.close()
-            seen_f.close()
+            self.text_f.close()
+            self.meta_f.close()
+            self.seen_f.close()
             self._save_progress({"finished": True, "elapsed_seconds": time.time() - t0})
             print(f"[{self.lang_code}] stopped: {self.total_chars:,} chars, "
                   f"{self.total_articles:,} articles, "

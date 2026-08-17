@@ -24,7 +24,9 @@ way a human reader would browse from page to page.
 
 import json
 import os
+import queue
 import re
+import threading
 import time
 import urllib.parse
 
@@ -39,6 +41,14 @@ DetectorFactory.seed = 0
 
 REQUEST_TIMEOUT = 20
 MIN_ARTICLE_CHARS = 300
+# There is only one domain here (unlike the news crawler's several sites),
+# so this is the only lever for aggregate throughput: each worker paces
+# itself independently at the domain's own crawl-delay, same model as
+# NewsCollector.WORKERS_PER_SITE. Wikipedia's own robots.txt explicitly
+# welcomes "friendly, low-speed bots" on article pages, and its
+# infrastructure is built for vastly higher load than this, so a handful
+# of concurrent well-paced connections stays well inside that spirit.
+NUM_WORKERS = 4
 # Body/prose content (Parsoid-rendered) links with an absolute URL,
 # e.g. href="https://ne.wikipedia.org/wiki/Title" -- distinct from the
 # relative /wiki/Title hrefs used by navigation chrome (sidebar, header).
@@ -129,19 +139,28 @@ class WikipediaCollector:
                     self.total_chars += rec["n_chars"]
                     self.total_articles += 1
 
-        self.frontier = []
+        # frontier_queue is thread-safe (queue.Queue); `queued` tracks
+        # membership so the same title is never enqueued twice by two
+        # workers that discover it on different pages at the same time --
+        # both need self.lock since NUM_WORKERS threads touch them.
+        self.frontier_queue = queue.Queue()
         self.queued = set()
+        pending = []
         if os.path.exists(self.frontier_path):
             with open(self.frontier_path, encoding="utf-8") as f:
                 for line in f:
                     t = line.rstrip("\n")
                     if t and t not in self.seen_titles and t not in self.queued:
                         self.queued.add(t)
-                        self.frontier.append(t)
+                        pending.append(t)
         for t in seed_titles:
             if t not in self.seen_titles and t not in self.queued:
                 self.queued.add(t)
-                self.frontier.append(t)
+                pending.append(t)
+        for t in pending:
+            self.frontier_queue.put(t)
+        self._initial_frontier_size = len(pending)
+        self.lock = threading.Lock()
 
     def _save_progress(self, extra=None):
         prog = {
@@ -149,7 +168,7 @@ class WikipediaCollector:
             "total_articles": self.total_articles,
             "estimated_tokens": self.total_chars / self.chars_per_token,
             "target_chars": self.target_chars,
-            "frontier_remaining": len(self.frontier),
+            "frontier_remaining": self.frontier_queue.qsize(),
         }
         if extra:
             prog.update(extra)
@@ -159,32 +178,39 @@ class WikipediaCollector:
     def _article_url(self, title):
         return self.base + "/wiki/" + urllib.parse.quote(title.replace(" ", "_"))
 
-    def collect(self, max_articles=None):
-        t0 = time.time()
+    def _worker(self, stop_event, busy, max_articles, t0):
+        """One of NUM_WORKERS threads sharing the single Wikipedia domain.
+        `busy` is a 1-element list used as a shared mutable counter (under
+        self.lock) of workers currently mid-fetch, so an idle worker can
+        tell "queue is empty and nothing else is about to add to it"
+        (safe to exit) apart from "queue is empty but another worker
+        might discover more links any moment" (should keep waiting).
+        """
         headers = {"User-Agent": USER_AGENT}
-        print(f"[wikipedia/{self.lang_code}] resume state: {self.total_chars:,} chars "
-              f"(~{self.total_chars/self.chars_per_token/1e6:.2f}M est. tokens), "
-              f"{self.total_articles:,} articles, {len(self.seen_titles):,} titles already visited, "
-              f"{len(self.frontier):,} seeds queued", flush=True)
-
-        text_f = open(self.text_path, "a", encoding="utf-8")
-        meta_f = open(self.meta_path, "a", encoding="utf-8")
-        seen_f = open(self.seen_titles_path, "a", encoding="utf-8")
-        frontier_f = open(self.frontier_path, "a", encoding="utf-8")
-        last_log = self.total_chars
         next_allowed = 0.0
+        while not stop_event.is_set():
+            try:
+                title = self.frontier_queue.get(timeout=1.0)
+            except queue.Empty:
+                with self.lock:
+                    if busy[0] == 0:
+                        return
+                continue
 
-        try:
-            while self.frontier and self.total_chars < self.target_chars:
-                if max_articles and self.total_articles >= max_articles:
-                    break
-                title = self.frontier.pop(0)
+            with self.lock:
                 self.queued.discard(title)
-                if title in self.seen_titles:
-                    continue
-                self.seen_titles.add(title)
-                seen_f.write(title + "\n")
+                already_seen = title in self.seen_titles
+                if not already_seen:
+                    self.seen_titles.add(title)
+                    self.seen_f.write(title + "\n")
+                    self.seen_f.flush()
+                busy[0] += 1
+            if already_seen:
+                with self.lock:
+                    busy[0] -= 1
+                continue
 
+            try:
                 url = self._article_url(title)
                 delay = self.robots.crawl_delay(url)
                 wait = next_allowed - time.time()
@@ -202,19 +228,20 @@ class WikipediaCollector:
                     continue
 
                 new_titles = _extract_mainspace_links(r.text, self.base)
-                for nt in new_titles:
-                    if nt not in self.seen_titles and nt not in self.queued:
-                        self.queued.add(nt)
-                        self.frontier.append(nt)
-                        frontier_f.write(nt + "\n")
-                frontier_f.flush()
+                with self.lock:
+                    for nt in new_titles:
+                        if nt not in self.seen_titles and nt not in self.queued:
+                            self.queued.add(nt)
+                            self.frontier_queue.put(nt)
+                            self.frontier_f.write(nt + "\n")
+                    self.frontier_f.flush()
 
                 text = trafilatura.extract(r.content, favor_recall=False,
                                             include_comments=False, include_tables=False)
                 if not text or len(text) < MIN_ARTICLE_CHARS:
                     continue
                 h = _content_hash(text)
-                if h in self.seen_hashes:
+                if h in self.seen_hashes:  # cheap unlocked pre-check
                     continue
                 try:
                     detected = detect(text[:1000])
@@ -223,31 +250,65 @@ class WikipediaCollector:
                 if detected != self.lang_code:
                     continue
 
-                self.seen_hashes.add(h)
-                text_f.write(text.strip() + "\n\n")
-                meta_f.write(json.dumps({
-                    "title": title, "url": url, "hash": h, "n_chars": len(text),
-                }, ensure_ascii=False) + "\n")
-                text_f.flush()
-                meta_f.flush()
-                seen_f.flush()
+                with self.lock:
+                    if h in self.seen_hashes:
+                        continue
+                    self.seen_hashes.add(h)
+                    self.text_f.write(text.strip() + "\n\n")
+                    self.meta_f.write(json.dumps({
+                        "title": title, "url": url, "hash": h, "n_chars": len(text),
+                    }, ensure_ascii=False) + "\n")
+                    self.text_f.flush()
+                    self.meta_f.flush()
 
-                self.total_chars += len(text)
-                self.total_articles += 1
+                    self.total_chars += len(text)
+                    self.total_articles += 1
 
-                if self.total_chars - last_log >= 500_000:
-                    last_log = self.total_chars
-                    elapsed = (time.time() - t0) / 60
-                    print(f"[wikipedia/{self.lang_code}] progress: {self.total_chars/1e6:.2f}M chars "
-                          f"(~{self.total_chars/self.chars_per_token/1e6:.2f}M est. tokens), "
-                          f"{self.total_articles:,} articles, frontier={len(self.frontier):,}, "
-                          f"{elapsed:.1f} min elapsed", flush=True)
-                    self._save_progress()
+                    if self.total_chars - self.last_log >= 500_000:
+                        self.last_log = self.total_chars
+                        elapsed = (time.time() - t0) / 60
+                        print(f"[wikipedia/{self.lang_code}] progress: {self.total_chars/1e6:.2f}M chars "
+                              f"(~{self.total_chars/self.chars_per_token/1e6:.2f}M est. tokens), "
+                              f"{self.total_articles:,} articles, "
+                              f"frontier={self.frontier_queue.qsize():,}, "
+                              f"{elapsed:.1f} min elapsed", flush=True)
+                        self._save_progress()
+
+                    if (self.total_chars >= self.target_chars
+                            or (max_articles and self.total_articles >= max_articles)):
+                        stop_event.set()
+            finally:
+                with self.lock:
+                    busy[0] -= 1
+
+    def collect(self, max_articles=None):
+        t0 = time.time()
+        print(f"[wikipedia/{self.lang_code}] resume state: {self.total_chars:,} chars "
+              f"(~{self.total_chars/self.chars_per_token/1e6:.2f}M est. tokens), "
+              f"{self.total_articles:,} articles, {len(self.seen_titles):,} titles already visited, "
+              f"{self._initial_frontier_size:,} seeds queued, {NUM_WORKERS} workers", flush=True)
+
+        self.text_f = open(self.text_path, "a", encoding="utf-8")
+        self.meta_f = open(self.meta_path, "a", encoding="utf-8")
+        self.seen_f = open(self.seen_titles_path, "a", encoding="utf-8")
+        self.frontier_f = open(self.frontier_path, "a", encoding="utf-8")
+        self.last_log = self.total_chars
+        stop_event = threading.Event()
+        busy = [0]
+
+        try:
+            threads = [threading.Thread(target=self._worker, args=(stop_event, busy, max_articles, t0),
+                                         daemon=True)
+                       for _ in range(NUM_WORKERS)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
         finally:
-            text_f.close()
-            meta_f.close()
-            seen_f.close()
-            frontier_f.close()
+            self.text_f.close()
+            self.meta_f.close()
+            self.seen_f.close()
+            self.frontier_f.close()
             self._save_progress({"finished": True, "elapsed_seconds": time.time() - t0})
             print(f"[wikipedia/{self.lang_code}] stopped: {self.total_chars:,} chars, "
                   f"{self.total_articles:,} articles, "
