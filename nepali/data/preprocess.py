@@ -31,6 +31,12 @@ SOURCES = [
         "granularity": "article",
         "path": os.path.join(HERE, "raw", "manual", "news_scrape", "scraped_articles.txt"),
     },
+    {
+        "name": "wikipedia_scrape_manual",
+        "type": "manual",
+        "granularity": "article",
+        "path": os.path.join(HERE, "raw", "manual", "wikipedia_scrape", "scraped_wikipedia.txt"),
+    },
 ]
 
 if __name__ == "__main__":

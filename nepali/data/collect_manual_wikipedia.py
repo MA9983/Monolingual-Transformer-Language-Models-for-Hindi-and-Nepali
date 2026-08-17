@@ -1,0 +1,53 @@
+"""Manual-collection supplement for the Nepali corpus: a BFS link-following
+crawl of ne.wikipedia.org (see common/wikipedia_scraper.py for why this
+counts as manual collection and how it stays robots.txt-compliant).
+
+This exists because news-site scraping alone (collect_manual_news.py)
+exhausts at ~92K tokens across all 7 vetted Nepali news sites -- their
+entire discoverable pool via sitemaps/RSS, not a "needs more time" problem
+-- which is nowhere near enough to keep manual data at >=20% of a corpus
+anywhere near the ~500M-token target. Wikipedia was chosen, after
+discussion, as the way to close that gap: it is explicitly one of the
+assignment's own examples of manual collection ("scraping + cleaning
+pages you gather yourself"), scales far beyond what the news sites can
+offer (Nepali Wikipedia has on the order of 40,000 articles), and is
+naturally already in Devanagari, real Nepali prose.
+
+Target: best-effort, sized to what a background crawl can realistically
+reach given ~1 request/2s from a single domain (no round-robin speedup
+possible, unlike the multi-site news crawler) -- left running well past
+any single check-in, same as the other Phase 1 background collection
+jobs.
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common"))
+from wikipedia_scraper import WikipediaCollector  # noqa: E402
+
+TARGET_TOKENS = 40_000_000
+CHARS_PER_TOKEN = 4.5
+TARGET_CHARS = int(TARGET_TOKENS * CHARS_PER_TOKEN)
+
+# Deliberately topically diverse seeds so the BFS frontier doesn't get
+# stuck in one densely-interlinked cluster (e.g. all geography) before
+# exploring others (science, sport, religion, ...).
+SEED_TITLES = [
+    "नेपाल", "भारत", "काठमाडौं", "विज्ञान", "इतिहास", "भूगोल", "राजनीति",
+    "साहित्य", "नेपाली भाषा", "धर्म", "खेलकुद", "अर्थशास्त्र", "स्वास्थ्य",
+    "शिक्षा", "प्रविधि", "संस्कृति", "गणित", "जीवविज्ञान", "भौतिक शास्त्र", "कला",
+]
+
+OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "wikipedia_scrape")
+
+if __name__ == "__main__":
+    collector = WikipediaCollector(
+        wiki_domain="ne.wikipedia.org",
+        lang_code="ne",
+        seed_titles=SEED_TITLES,
+        target_chars=TARGET_CHARS,
+        out_dir=OUT_DIR,
+        chars_per_token=CHARS_PER_TOKEN,
+    )
+    collector.collect()
