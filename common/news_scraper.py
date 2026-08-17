@@ -199,25 +199,27 @@ class NewsCollector:
         if os.path.exists(self.seen_urls_path):
             with open(self.seen_urls_path, encoding="utf-8") as f:
                 self.seen_urls = set(line.strip() for line in f if line.strip())
+        # Resume counts are derived from meta.jsonl -- the append-only,
+        # per-article source of truth -- rather than trusted from
+        # progress.json, which is only written periodically and would
+        # silently undercount everything if a previous run was killed
+        # (e.g. Ctrl-C, OOM, a Colab disconnect) between two of its
+        # checkpoints.
         self.seen_hashes = set()
+        self.total_chars = 0
+        self.total_articles = 0
+        self.per_site_chars = {s["name"]: 0 for s in sites}
         if os.path.exists(self.meta_path):
             with open(self.meta_path, encoding="utf-8") as f:
                 for line in f:
                     try:
                         rec = json.loads(line)
-                        self.seen_hashes.add(rec["hash"])
                     except Exception:
                         continue
-
-        self.total_chars = 0
-        self.total_articles = 0
-        self.per_site_chars = {s["name"]: 0 for s in sites}
-        if os.path.exists(self.progress_path):
-            with open(self.progress_path, encoding="utf-8") as f:
-                prog = json.load(f)
-            self.total_chars = prog.get("total_chars", 0)
-            self.total_articles = prog.get("total_articles", 0)
-            self.per_site_chars.update(prog.get("per_site_chars", {}))
+                    self.seen_hashes.add(rec["hash"])
+                    self.total_chars += rec["n_chars"]
+                    self.total_articles += 1
+                    self.per_site_chars[rec["site"]] = self.per_site_chars.get(rec["site"], 0) + rec["n_chars"]
 
     def _save_progress(self, extra=None):
         prog = {
@@ -237,7 +239,13 @@ class NewsCollector:
         r = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         if r.status_code != 200:
             return None
-        text = trafilatura.extract(r.text, favor_recall=False,
+        # Pass raw bytes rather than r.text: several sites (e.g.
+        # onlinekhabar.com) send `Content-Type: text/html` with no charset,
+        # which makes requests fall back to ISO-8859-1 and mangle the
+        # Devanagari into mojibake. trafilatura does its own HTML-aware
+        # encoding detection (meta charset tags, etc.) on raw bytes, which
+        # gets this right.
+        text = trafilatura.extract(r.content, favor_recall=False,
                                     include_comments=False, include_tables=False)
         return text
 
