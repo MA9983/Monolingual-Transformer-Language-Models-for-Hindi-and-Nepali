@@ -82,7 +82,17 @@ def stream_indiccorp_to_target(files, out_path, target_chars, chars_per_token=4.
                               flush=True)
                     if total_chars >= target_chars:
                         break
-                buffer += decoder.decode(b"", final=True)
+                if total_chars < target_chars:
+                    # Only finalize the decoder (and risk it raising on a
+                    # genuinely truncated response) when we actually reached
+                    # the real end of the stream. If we stopped because the
+                    # target was hit mid-chunk, any partial trailing bytes
+                    # still sitting in the decoder are simply unread data we
+                    # chose not to consume, not a truncation -- discard them.
+                    try:
+                        buffer += decoder.decode(b"", final=True)
+                    except UnicodeDecodeError:
+                        pass
                 trailing = buffer.strip()
                 if trailing and total_chars < target_chars:
                     out.write(trailing + "\n")

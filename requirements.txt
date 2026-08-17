@@ -16,6 +16,7 @@ python-dateutil==2.9.0.post0
 pytz==2026.3.post1
 regex==2026.7.19
 requests==2.34.2
+sentencepiece==0.2.2
 six==1.17.0
 soupsieve==2.9.2
 tld==0.13.2
