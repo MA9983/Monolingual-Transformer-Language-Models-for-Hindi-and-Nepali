@@ -20,10 +20,9 @@ Hindi-language sister publication and has genuinely deep dated archives
 (observed: ~10,000 URLs per half-month sitemap, 363 historical sub-sitemaps
 in its index), so it does the equivalent job.
 
-Target: ~150M raw tokens (~675M characters at 4.5 chars/token), matching
-the ~500M (download) + ~150M (scrape) split requested for this project so
-that post-cleaning/dedup losses still leave the manual share comfortably
-above the 20% floor.
+Target: ~115M raw tokens (~518M characters at 4.5 chars/token) -- revised
+down from the original ~150M ambition per the user's instruction to cap
+manual scraping at ~110-120M tokens for both languages.
 """
 
 import os
@@ -32,7 +31,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common"))
 from news_scraper import NewsCollector  # noqa: E402
 
-TARGET_TOKENS = 150_000_000
+TARGET_TOKENS = 115_000_000
 CHARS_PER_TOKEN = 4.5
 TARGET_CHARS = int(TARGET_TOKENS * CHARS_PER_TOKEN)
 

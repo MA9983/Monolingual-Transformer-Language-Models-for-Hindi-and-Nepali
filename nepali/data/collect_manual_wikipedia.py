@@ -13,11 +13,20 @@ pages you gather yourself"), scales far beyond what the news sites can
 offer (Nepali Wikipedia has on the order of 40,000 articles), and is
 naturally already in Devanagari, real Nepali prose.
 
-Target: best-effort, sized to what a background crawl can realistically
-reach given ~1 request/2s from a single domain (no round-robin speedup
-possible, unlike the multi-site news crawler) -- left running well past
-any single check-in, same as the other Phase 1 background collection
-jobs.
+Target: set high (per the user's ~110-120M-token manual-data goal for
+both languages) but almost certainly unreachable from this source alone
+-- ne.wikipedia.org has on the order of 40,000 articles total, so even
+crawling every single one of them (impossible in practice too, since many
+are short stubs and some are unreachable from these seeds) caps out
+somewhere around 15-20M tokens, not 110-120M. Setting the target this
+high is still the right move mechanically: it just means the crawler
+keeps going until it has exhausted essentially the whole reachable wiki
+rather than stopping early at an artificially low number, which is
+exactly what "get as much manual Nepali data as this source can give"
+means in practice. Nepali news scraping (collect_manual_news.py) adds
+more on top, but nowhere near enough to close a ~100M-token gap -- the
+combined realistic ceiling for Nepali manual data is far below Hindi's,
+and that shortfall should be reported honestly rather than papered over.
 """
 
 import os
@@ -26,7 +35,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common"))
 from wikipedia_scraper import WikipediaCollector  # noqa: E402
 
-TARGET_TOKENS = 40_000_000
+TARGET_TOKENS = 115_000_000
 CHARS_PER_TOKEN = 4.5
 TARGET_CHARS = int(TARGET_TOKENS * CHARS_PER_TOKEN)
 
