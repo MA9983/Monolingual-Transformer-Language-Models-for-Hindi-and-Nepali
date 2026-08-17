@@ -31,7 +31,14 @@ SITES = [
     {"name": "setopati", "homepage": "https://www.setopati.com"},
     {"name": "nagariknews", "homepage": "https://nagariknews.nagariknetwork.com"},
     {"name": "ratopati", "homepage": "https://ratopati.com"},
+    {"name": "nayapatrikadaily", "homepage": "https://www.nayapatrikadaily.com"},
+    {"name": "nepalkhabar", "homepage": "https://www.nepalkhabar.com"},
 ]
+# Also checked and excluded: gorkhapatraonline.com, nepalpress.com (both
+# disallow ClaudeBot/Claude-Web), baahrakhari.com (explicit
+# Content-Signal: ai-train=no plus a ClaudeBot disallow), karobardaily.com
+# (disallows ClaudeBot despite having a real deep sitemap index -- the one
+# site here that clearly had the archive depth to matter).
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "news_scrape")
 
