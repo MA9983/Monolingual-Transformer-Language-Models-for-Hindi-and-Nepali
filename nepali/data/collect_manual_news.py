@@ -9,10 +9,12 @@ not just at this static list-selection stage. Ratopati declares a 20s
 crawl-delay, which RobotsCache picks up and enforces automatically, so it
 will naturally contribute far fewer articles per hour than the others.
 
-Target: same ~150M raw token (~675M character) ambition as Hindi, on a
-best-effort basis -- Nepali news publishing volume online is smaller, so
-this may fall short; the actual collected amount is reported honestly in
-the Phase 1 statistics/report rather than padded.
+Target: the user's cap for Nepali manual data overall is 110M tokens,
+combined across both manual sources (this news scraper + the Wikipedia
+crawler in collect_manual_wikipedia.py). Wikipedia is already exhausted
+at a fixed ~14.30M tokens and cannot grow further, so this scraper's own
+target is set to ~95.7M tokens (110M - 14.30M) so the combined total
+lands at the requested ~110M cap rather than overshooting it.
 """
 
 import os
@@ -21,7 +23,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common"))
 from news_scraper import NewsCollector  # noqa: E402
 
-TARGET_TOKENS = 150_000_000
+TARGET_TOKENS = 95_700_000
 CHARS_PER_TOKEN = 4.5
 TARGET_CHARS = int(TARGET_TOKENS * CHARS_PER_TOKEN)
 
