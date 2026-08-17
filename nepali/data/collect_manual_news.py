@@ -46,15 +46,24 @@ SITES = [
     {"name": "nepalmag", "homepage": "https://www.nepalmag.com.np"},
     {"name": "news24nepal", "homepage": "https://www.news24nepal.com"},
     {"name": "ujyaaloonline", "homepage": "https://www.ujyaaloonline.com"},
+    # Third pass, from a user-supplied candidate list. bizmandu and
+    # rajdhanidaily both turned out to have genuine deep sitemap archives
+    # (dated back to 2013 and 2020 respectively), same profile as
+    # deshsanchar/nepalnews -- expected to be the main new contributors here.
+    {"name": "bizmandu", "homepage": "https://www.bizmandu.com"},
+    {"name": "rajdhanidaily", "homepage": "https://rajdhanidaily.com"},
 ]
 # Also checked and excluded: gorkhapatraonline.com, nepalpress.com (both
 # disallow ClaudeBot/Claude-Web), baahrakhari.com, thahakhabar.com,
-# ratopati.com.np (all three: explicit Content-Signal: ai-train=no plus a
-# ClaudeBot disallow), karobardaily.com (disallows ClaudeBot despite
-# having a real deep sitemap index), annapurnapost.com, lokaantar.com,
-# newsofnepal.com, reportersnepal.com (robots.txt unreachable / HTTP 403
-# on every attempt, treated as inconclusive-so-skip rather than assumed
-# safe).
+# ratopati.com.np, himalkhabar.com (all four: explicit Content-Signal:
+# ai-train=no plus a ClaudeBot disallow), karobardaily.com (disallows
+# ClaudeBot despite having a real deep sitemap index), annapurnapost.com,
+# lokaantar.com, newsofnepal.com, reportersnepal.com (robots.txt
+# consistently 403s even with a browser User-Agent, on every attempt
+# across multiple checks -- treated as inaccessible rather than assumed
+# safe). deshsanchaar.com (double "a", from the user's list) does not
+# resolve at all; deshsanchar.com (single "a", already in this list) is
+# presumably the intended site.
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "news_scrape")
 

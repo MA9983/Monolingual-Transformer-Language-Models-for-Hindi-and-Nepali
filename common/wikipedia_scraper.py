@@ -48,7 +48,7 @@ MIN_ARTICLE_CHARS = 300
 # welcomes "friendly, low-speed bots" on article pages, and its
 # infrastructure is built for vastly higher load than this, so a handful
 # of concurrent well-paced connections stays well inside that spirit.
-NUM_WORKERS = 4
+NUM_WORKERS = 6
 # Body/prose content (Parsoid-rendered) links with an absolute URL,
 # e.g. href="https://ne.wikipedia.org/wiki/Title" -- distinct from the
 # relative /wiki/Title hrefs used by navigation chrome (sidebar, header).
