@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+logs/
+*.log
+
+# Large raw/processed/split corpora and checkpoints stay on Google Drive, not
+# git (only lightweight manifests/statistics under statistics/ are tracked).
+hindi/data/raw/
+hindi/data/processed/
+hindi/data/splits/
+nepali/data/raw/
+nepali/data/processed/
+nepali/data/splits/
+*.ckpt
+*.pt
+*.bin
