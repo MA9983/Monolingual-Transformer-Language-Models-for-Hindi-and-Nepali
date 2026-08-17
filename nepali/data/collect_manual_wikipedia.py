@@ -80,6 +80,40 @@ SEED_TITLES = [
     "औषधि विज्ञान", "मनोविज्ञान", "समाजशास्त्र", "मानवशास्त्र", "पुरातत्व",
     "भाषाविज्ञान", "दर्शनशास्त्र", "पत्रकारिता", "प्रकाशन", "पुस्तकालय",
     "नेपाली चलचित्र उद्योग", "ललितकला", "वास्तुकला", "फोटोग्राफी", "नृत्य",
+    # Fifth batch: the frontier hit 0 and the crawl stopped naturally
+    # (~24,400 articles visited) -- this is expected, matching the
+    # ~15-20M-token ceiling flagged earlier for a wiki this size. Named
+    # people, specific districts, and specific historical
+    # events/religious sites tend to be genuinely under-linked from the
+    # broad subject-area seeds above, so they're the best remaining bet
+    # for finding any still-unvisited pockets of the site.
+    "शेरबहादुर देउवा", "केपी शर्मा ओली", "पुष्पकमल दाहाल", "गिरिजाप्रसाद कोइराला",
+    "बीपी कोइराला", "ज्ञानेन्द्र शाह", "वीरेन्द्र वीर विक्रम शाह", "माधवकुमार नेपाल",
+    "लक्ष्मीप्रसाद देवकोटा", "पारिजात", "भूपी शेरचन", "बालकृष्ण सम",
+    "पारस खड्का", "संदीप लामिछाने", "नेपाल क्रिकेट राष्ट्रिय टोली",
+    "नेपाल राष्ट्रिय फुटबल टोली", "काठमाडौं जिल्ला", "चितवन जिल्ला",
+    "रुपन्देही जिल्ला", "मोरङ जिल्ला", "झापा जिल्ला", "कास्की जिल्ला",
+    "स्याङ्जा जिल्ला", "गोरखा जिल्ला", "धादिङ जिल्ला", "नुवाकोट जिल्ला",
+    "सिन्धुपाल्चोक जिल्ला", "दोलखा जिल्ला", "सोलुखुम्बु जिल्ला", "मुस्ताङ जिल्ला",
+    "नेपाल एकीकरण", "राणा शासन", "२०६२।०६३ को जनआन्दोलन", "माओवादी जनयुद्ध",
+    "२०७२ नेपाल भूकम्प", "पशुपतिनाथ मन्दिर", "स्वयम्भूनाथ", "बौद्धनाथ", "लुम्बिनी",
+    "जनकपुरधाम", "मुक्तिनाथ", "हलेसी महादेव", "पर्यटन उद्योग", "हस्तकला",
+    "नेपाल विद्युत प्राधिकरण", "नेपाल टेलिकम", "नेपाल वायुसेवा निगम",
+    "त्रिभुवन विश्वविद्यालय", "काठमाडौं विश्वविद्यालय", "पोखरा विश्वविद्यालय",
+    # Sixth batch: category pages (श्रेणी: = Category:), added after
+    # confirming plain link-following BFS had genuinely plateaued (a
+    # 44-title reseed found almost nothing new). Category pages list
+    # member articles and subcategories explicitly rather than relying on
+    # inline links, and common/wikipedia_scraper.py now recurses into
+    # subcategories found this way (while never saving a category page's
+    # own listing as "content") -- this should reach corners of the wiki
+    # the pure link-graph crawl missed entirely.
+    "श्रेणी:नेपाल", "श्रेणी:इतिहास", "श्रेणी:विज्ञान", "श्रेणी:भूगोल",
+    "श्रेणी:व्यक्ति", "श्रेणी:जीवनी", "श्रेणी:संस्कृति", "श्रेणी:खेलकुद",
+    "श्रेणी:राजनीति", "श्रेणी:धर्म", "श्रेणी:भाषा", "श्रेणी:साहित्य",
+    "श्रेणी:शिक्षा", "श्रेणी:प्रविधि", "श्रेणी:अर्थतन्त्र",
+    "श्रेणी:नेपालका जिल्ला", "श्रेणी:नेपालका सहरहरू", "श्रेणी:नेपालका नदीहरू",
+    "श्रेणी:नेपालका पहाडहरू", "श्रेणी:नेपाली राजनीतिज्ञ", "श्रेणी:नेपाली लेखक",
 ]
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "wikipedia_scrape")

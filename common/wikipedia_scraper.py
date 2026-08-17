@@ -57,14 +57,26 @@ NUM_WORKERS = 6
 # earlier version of this function did) starves the frontier almost
 # immediately since real body links are essentially all absolute here.
 REDLINK_MARKERS = ('redlink=1', 'class="new"', "class='new'")
+# Nepali Wikipedia's localized name for the Category: namespace. Plain
+# link-following BFS plateaus once it has covered the densely
+# cross-linked "core" of the wiki (confirmed: reseeding with 44 fresh
+# topic titles found almost nothing new) because category *membership*
+# is often not reflected in inline article-to-article links -- a category
+# page lists its member articles and subcategories explicitly, reaching
+# corners of the site pure link-following misses. Category pages are
+# themselves mainspace-adjacent (/wiki/श्रेणी:Title, not /wiki/Special:...),
+# so robots.txt does not disallow fetching them.
+CATEGORY_PREFIX = "श्रेणी:"
 
 
-def _extract_mainspace_links(html, base_wiki_prefix):
-    """Return de-duplicated mainspace article titles (no namespace prefix,
-    which MediaWiki always separates with ':' regardless of language --
-    e.g. Nepali's "Special:" is "विशेष:") linked from this page's HTML.
-    Skips "redlinks" (links to articles that don't exist yet -- fetching
-    one just returns an edit-this-page prompt, not article content).
+def _extract_mainspace_links(html, base_wiki_prefix, include_categories=False):
+    """Return de-duplicated article titles linked from this page's HTML:
+    mainspace titles (no namespace prefix, which MediaWiki always
+    separates with ':' regardless of language -- e.g. Nepali's "Special:"
+    is "विशेष:"), plus, when include_categories=True, CATEGORY_PREFIX
+    titles too (so the BFS can recurse into subcategories). Skips
+    "redlinks" (links to articles that don't exist yet -- fetching one
+    just returns an edit-this-page prompt, not article content).
     """
     titles = []
     seen = set()
@@ -86,7 +98,10 @@ def _extract_mainspace_links(html, base_wiki_prefix):
             continue
         title_enc = path[len("/wiki/"):].split("?", 1)[0].split("#", 1)[0]
         title = urllib.parse.unquote(title_enc).replace("_", " ")
-        if not title or ":" in title or title in seen:
+        if not title or title in seen:
+            continue
+        is_category = title.startswith(CATEGORY_PREFIX)
+        if ":" in title and not (include_categories and is_category):
             continue
         seen.add(title)
         titles.append(title)
@@ -227,7 +242,7 @@ class WikipediaCollector:
                 except Exception:
                     continue
 
-                new_titles = _extract_mainspace_links(r.text, self.base)
+                new_titles = _extract_mainspace_links(r.text, self.base, include_categories=True)
                 with self.lock:
                     for nt in new_titles:
                         if nt not in self.seen_titles and nt not in self.queued:
@@ -235,6 +250,12 @@ class WikipediaCollector:
                             self.frontier_queue.put(nt)
                             self.frontier_f.write(nt + "\n")
                     self.frontier_f.flush()
+
+                if title.startswith(CATEGORY_PREFIX):
+                    # Category pages are a link index (member articles +
+                    # subcategories), not prose -- already queued above,
+                    # never saved as "content".
+                    continue
 
                 text = trafilatura.extract(r.content, favor_recall=False,
                                             include_comments=False, include_tables=False)
