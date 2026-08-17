@@ -54,6 +54,14 @@ NON_ARTICLE_PATTERNS = (
 )
 MIN_ARTICLE_CHARS = 300
 MAX_SITEMAP_DEPTH = 3
+# Some sites (e.g. deshsanchar.com) serve the first sitemap fine, then
+# start timing out on every subsequent one in the same index -- almost
+# certainly rate-limiting, not real server slowness. Bailing out after a
+# short run of consecutive failures avoids burning REQUEST_TIMEOUT
+# seconds per file across a 200+ entry index (would otherwise stall
+# discovery for over an hour on a single uncooperative site) while still
+# keeping whatever URLs were already found from the sitemaps that did work.
+MAX_CONSECUTIVE_SITEMAP_FAILURES = 3
 # Each worker independently paces itself at the site's own crawl-delay
 # (e.g. 1 request/2s each), so N workers on one site achieve roughly N
 # times the aggregate throughput while no single connection ever exceeds
@@ -117,6 +125,7 @@ def discover_article_urls(homepage, robots_cache, max_urls, log_prefix=""):
 
     found = []
     found_set = set()
+    consecutive_failures = 0
     while frontier and len(found) < max_urls:
         sitemap_url, depth = frontier.pop(0)
         if sitemap_url in seen_sitemaps or depth > MAX_SITEMAP_DEPTH:
@@ -128,7 +137,16 @@ def discover_article_urls(homepage, robots_cache, max_urls, log_prefix=""):
             raw = _fetch_bytes(sitemap_url, headers)
         except Exception as e:
             print(f"{log_prefix}  [sitemap fetch failed] {sitemap_url}: {e}", flush=True)
+            consecutive_failures += 1
+            if consecutive_failures >= MAX_CONSECUTIVE_SITEMAP_FAILURES:
+                print(f"{log_prefix}  [sitemap] giving up on remaining "
+                      f"{len(frontier):,} queued sitemaps after "
+                      f"{consecutive_failures} consecutive failures "
+                      f"(likely rate-limited); keeping {len(found):,} urls found so far",
+                      flush=True)
+                break
             continue
+        consecutive_failures = 0
         if not _looks_like_xml(raw):
             continue  # fallback-guessed path resolved to an HTML page, not a real sitemap
         children, pages = _parse_sitemap_xml(raw)

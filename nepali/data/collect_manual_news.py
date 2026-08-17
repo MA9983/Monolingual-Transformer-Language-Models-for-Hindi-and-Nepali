@@ -33,12 +33,28 @@ SITES = [
     {"name": "ratopati", "homepage": "https://ratopati.com"},
     {"name": "nayapatrikadaily", "homepage": "https://www.nayapatrikadaily.com"},
     {"name": "nepalkhabar", "homepage": "https://www.nepalkhabar.com"},
+    # Added in a second pass to grow token yield. deshsanchar and
+    # nepalnews both turned out to have genuine deep sitemap archives
+    # (thousands of dated posts, unlike the mostly RSS-only recent-window
+    # sites above), so they're expected to be the main new contributors;
+    # nepalmag/news24nepal/ujyaaloonline have no declared sitemap and will
+    # likely only add a small RSS-sized pool like setopati did, but are
+    # included since they cost nothing and are clean.
+    {"name": "deshsanchar", "homepage": "https://deshsanchar.com"},
+    {"name": "nepalnews", "homepage": "https://nepalnews.com"},
+    {"name": "pahilopost", "homepage": "https://www.pahilopost.com"},
+    {"name": "nepalmag", "homepage": "https://www.nepalmag.com.np"},
+    {"name": "news24nepal", "homepage": "https://www.news24nepal.com"},
+    {"name": "ujyaaloonline", "homepage": "https://www.ujyaaloonline.com"},
 ]
 # Also checked and excluded: gorkhapatraonline.com, nepalpress.com (both
-# disallow ClaudeBot/Claude-Web), baahrakhari.com (explicit
-# Content-Signal: ai-train=no plus a ClaudeBot disallow), karobardaily.com
-# (disallows ClaudeBot despite having a real deep sitemap index -- the one
-# site here that clearly had the archive depth to matter).
+# disallow ClaudeBot/Claude-Web), baahrakhari.com, thahakhabar.com,
+# ratopati.com.np (all three: explicit Content-Signal: ai-train=no plus a
+# ClaudeBot disallow), karobardaily.com (disallows ClaudeBot despite
+# having a real deep sitemap index), annapurnapost.com, lokaantar.com,
+# newsofnepal.com, reportersnepal.com (robots.txt unreachable / HTTP 403
+# on every attempt, treated as inconclusive-so-skip rather than assumed
+# safe).
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "news_scrape")
 
