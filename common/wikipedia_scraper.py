@@ -100,6 +100,13 @@ class WikipediaCollector:
         self.text_path = os.path.join(out_dir, "scraped_wikipedia.txt")
         self.meta_path = os.path.join(out_dir, "scraped_wikipedia_meta.jsonl")
         self.seen_titles_path = os.path.join(out_dir, "seen_titles.txt")
+        # Discovered-but-not-yet-visited titles, persisted as we find them.
+        # Without this, killing the process (OOM, Ctrl-C, a Colab
+        # disconnect) silently throws away the entire in-memory BFS
+        # frontier -- on resume there would be nothing left to crawl
+        # beyond whatever seed titles hadn't been visited yet, even with
+        # tens of thousands of discovered titles sitting unexplored.
+        self.frontier_path = os.path.join(out_dir, "frontier.txt")
         self.progress_path = os.path.join(out_dir, "progress.json")
         self.robots = RobotsCache(USER_AGENT)
 
@@ -122,7 +129,19 @@ class WikipediaCollector:
                     self.total_chars += rec["n_chars"]
                     self.total_articles += 1
 
-        self.frontier = [t for t in seed_titles if t not in self.seen_titles]
+        self.frontier = []
+        self.queued = set()
+        if os.path.exists(self.frontier_path):
+            with open(self.frontier_path, encoding="utf-8") as f:
+                for line in f:
+                    t = line.rstrip("\n")
+                    if t and t not in self.seen_titles and t not in self.queued:
+                        self.queued.add(t)
+                        self.frontier.append(t)
+        for t in seed_titles:
+            if t not in self.seen_titles and t not in self.queued:
+                self.queued.add(t)
+                self.frontier.append(t)
 
     def _save_progress(self, extra=None):
         prog = {
@@ -151,6 +170,7 @@ class WikipediaCollector:
         text_f = open(self.text_path, "a", encoding="utf-8")
         meta_f = open(self.meta_path, "a", encoding="utf-8")
         seen_f = open(self.seen_titles_path, "a", encoding="utf-8")
+        frontier_f = open(self.frontier_path, "a", encoding="utf-8")
         last_log = self.total_chars
         next_allowed = 0.0
 
@@ -159,6 +179,7 @@ class WikipediaCollector:
                 if max_articles and self.total_articles >= max_articles:
                     break
                 title = self.frontier.pop(0)
+                self.queued.discard(title)
                 if title in self.seen_titles:
                     continue
                 self.seen_titles.add(title)
@@ -182,8 +203,11 @@ class WikipediaCollector:
 
                 new_titles = _extract_mainspace_links(r.text, self.base)
                 for nt in new_titles:
-                    if nt not in self.seen_titles:
+                    if nt not in self.seen_titles and nt not in self.queued:
+                        self.queued.add(nt)
                         self.frontier.append(nt)
+                        frontier_f.write(nt + "\n")
+                frontier_f.flush()
 
                 text = trafilatura.extract(r.content, favor_recall=False,
                                             include_comments=False, include_tables=False)
@@ -223,6 +247,7 @@ class WikipediaCollector:
             text_f.close()
             meta_f.close()
             seen_f.close()
+            frontier_f.close()
             self._save_progress({"finished": True, "elapsed_seconds": time.time() - t0})
             print(f"[wikipedia/{self.lang_code}] stopped: {self.total_chars:,} chars, "
                   f"{self.total_articles:,} articles, "
