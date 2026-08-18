@@ -38,6 +38,20 @@ SITES = [
     {"name": "jagran", "homepage": "https://www.jagran.com"},
     {"name": "abplive", "homepage": "https://www.abplive.com"},
     {"name": "livehindustan", "homepage": "https://www.livehindustan.com"},
+    # Second pass: jagran/abplive/livehindustan's readily-discoverable
+    # archives got mostly exhausted after many hours of scraping, so more
+    # sites were added for fresh headroom. indiatv.in is a standout: 326
+    # monthly sitemaps back to 2018-01, the same caliber of deep archive
+    # as livehindustan. punjabkesari and aajtak add real but shallower
+    # pools (a few hundred to a couple thousand URLs each via their
+    # newssitemap-style listings). Also checked and excluded: patrika.com
+    # (disallows ClaudeBot and anthropic-ai), zeenews.india.com (disallows
+    # ClaudeBot/claude-web), navbharattimes.indiatimes.com (only
+    # category/section pages found, no deep article archive), samaylive.com
+    # (unreachable).
+    {"name": "indiatv", "homepage": "https://www.indiatv.in"},
+    {"name": "punjabkesari", "homepage": "https://www.punjabkesari.in"},
+    {"name": "aajtak", "homepage": "https://www.aajtak.in"},
 ]
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "news_scrape")

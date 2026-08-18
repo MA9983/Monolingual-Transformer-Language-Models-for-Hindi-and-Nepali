@@ -46,7 +46,8 @@ USER_AGENT = (
 )
 REQUEST_TIMEOUT = 20
 NON_ARTICLE_PATTERNS = (
-    "/video/", "/videos/", "/photo/", "/photos/", "/photo-gallery/",
+    "/video/", "/videos/", "/short-video/", "/short-videos/", "/shortvideo/",
+    "/photo/", "/photos/", "/photo-gallery/",
     "/gallery/", "/web-stories/", "/webstories/", "/live-blog/", "/liveblog/",
     "/live-updates", "/shorts/", "/podcast/", "/audio/", "/login", "/search",
     "/tag/", "/topic/", "/author/", "/rashifal", "/horoscope", "/astrology",
