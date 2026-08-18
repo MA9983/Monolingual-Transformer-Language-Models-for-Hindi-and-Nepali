@@ -80,7 +80,7 @@ NON_ARTICLE_SITEMAP_PATTERNS = ("image-sitemap", "video-sitemap", "gallery-sitem
 # the polite per-connection rate -- the same model Scrapy's
 # CONCURRENT_REQUESTS_PER_DOMAIN uses. Kept modest (not dozens) so this
 # stays "friendly low-speed" in aggregate, not a burst hammering one site.
-WORKERS_PER_SITE = 20
+WORKERS_PER_SITE = 12
 
 # Many sites host a sitemap/feed without declaring it in robots.txt, so these
 # common paths are always tried in addition to whatever robots.txt lists.
