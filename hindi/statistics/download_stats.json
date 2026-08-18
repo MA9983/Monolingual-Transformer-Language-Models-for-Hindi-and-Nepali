@@ -1,0 +1,22 @@
+{
+  "files": [
+    {
+      "file": "hi-1.txt",
+      "chars": 2250354226,
+      "lines": 7687702,
+      "bytes_downloaded": 5780799488
+    }
+  ],
+  "source": "ai4bharat/IndicCorpV2",
+  "license": "CC-0",
+  "total_chars": 2250354226,
+  "total_lines": 7687702,
+  "total_bytes_downloaded": 5780799488,
+  "estimated_tokens": 500078716.8888889,
+  "chars_per_token_assumption": 4.5,
+  "target_chars": 2250000000,
+  "target_reached": true,
+  "elapsed_seconds": 1911.4677073955536,
+  "out_path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/hindi/data/raw/downloaded/indiccorp/hindi_indiccorp_raw.txt",
+  "language": "hindi"
+}

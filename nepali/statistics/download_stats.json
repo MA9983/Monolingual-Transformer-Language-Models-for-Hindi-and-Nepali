@@ -1,0 +1,22 @@
+{
+  "files": [
+    {
+      "file": "ne.txt",
+      "chars": 2250285142,
+      "lines": 10333277,
+      "bytes_downloaded": 6042943488
+    }
+  ],
+  "source": "ai4bharat/IndicCorpV2",
+  "license": "CC-0",
+  "total_chars": 2250285142,
+  "total_lines": 10333277,
+  "total_bytes_downloaded": 6042943488,
+  "estimated_tokens": 500063364.8888889,
+  "chars_per_token_assumption": 4.5,
+  "target_chars": 2250000000,
+  "target_reached": true,
+  "elapsed_seconds": 2058.0140986442566,
+  "out_path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/nepali/data/raw/downloaded/indiccorp/nepali_indiccorp_raw.txt",
+  "language": "nepali"
+}
