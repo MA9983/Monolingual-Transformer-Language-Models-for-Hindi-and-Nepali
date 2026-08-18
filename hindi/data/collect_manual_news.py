@@ -58,6 +58,16 @@ SITES = [
     # same role reliably instead.
     {"name": "punjabkesari", "homepage": "https://www.punjabkesari.in"},
     {"name": "aajtak", "homepage": "https://www.aajtak.in"},
+    # Third pass: jagran/abplive/livehindustan/punjabkesari/aajtak are now
+    # mostly exhausted of backlog too (each restart only turns up a small
+    # trickle of newly-published articles), so throughput without indiatv
+    # had become bottlenecked by organic publication rate rather than
+    # scraping speed. timesnowhindi.com has 37 real monthly sitemaps back
+    # to 2023-08 and no AI-bot restrictions. Also checked and excluded:
+    # jansatta.com (403 on robots.txt), haribhoomi.com and
+    # hindi.oneindia.com (both disallow ClaudeBot/anthropic-ai),
+    # livehindi.tv (unreachable).
+    {"name": "timesnowhindi", "homepage": "https://www.timesnowhindi.com"},
 ]
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "news_scrape")
