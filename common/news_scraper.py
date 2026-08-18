@@ -112,8 +112,12 @@ def _parse_sitemap_xml(raw_bytes):
 
 
 def _looks_like_xml(raw_bytes):
-    head = raw_bytes[:200].lstrip().lower()
-    return head.startswith(b"<?xml") or head.startswith(b"<urlset") or head.startswith(b"<sitemapindex")
+    head = raw_bytes[:200]
+    if head.startswith(b"\xef\xbb\xbf"):  # UTF-8 BOM (e.g. punjabkesari.in's sitemaps
+        head = head[3:]                  # have one) isn't whitespace, so .lstrip()
+    head = head.lstrip().lower()         # alone leaves it in front of "<?xml", making
+    return (head.startswith(b"<?xml") or head.startswith(b"<urlset")  # a real sitemap
+            or head.startswith(b"<sitemapindex"))                     # look like not-XML.
 
 
 def discover_article_urls(homepage, robots_cache, max_urls, log_prefix=""):
