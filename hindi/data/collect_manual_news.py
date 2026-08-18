@@ -20,8 +20,9 @@ Hindi-language sister publication and has genuinely deep dated archives
 (observed: ~10,000 URLs per half-month sitemap, 363 historical sub-sitemaps
 in its index), so it does the equivalent job.
 
-Target: ~110M raw tokens (~495M characters at 4.5 chars/token) -- the
-user's explicit hard cap for Hindi manual scraping.
+Target: ~120M raw tokens (~540M characters at 4.5 chars/token) -- raised
+from the original 110M cap per the user's follow-up instruction, after
+110M was reached on 18 Aug 2026.
 """
 
 import os
@@ -30,7 +31,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "common"))
 from news_scraper import NewsCollector  # noqa: E402
 
-TARGET_TOKENS = 110_000_000
+TARGET_TOKENS = 120_000_000
 CHARS_PER_TOKEN = 4.5
 TARGET_CHARS = int(TARGET_TOKENS * CHARS_PER_TOKEN)
 
