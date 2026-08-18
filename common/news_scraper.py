@@ -63,13 +63,24 @@ MAX_SITEMAP_DEPTH = 3
 # discovery for over an hour on a single uncooperative site) while still
 # keeping whatever URLs were already found from the sitemaps that did work.
 MAX_CONSECUTIVE_SITEMAP_FAILURES = 3
+# Some sites (e.g. aajtak.in) declare a sitemap index with one child
+# sitemap per *day* for image/video content going back years -- hundreds
+# of files that each yield almost nothing (a handful of image URLs, not
+# articles) but each still costs a full request. Since discovery for all
+# of a site's sitemaps must finish before that site's articles start
+# being fetched, this could stall a large, genuinely useful sitemap
+# (found later in the same site's list) for a very long time. Skip
+# sitemap *files* whose own URL flags them as one of these types, rather
+# than only filtering the article URLs found inside them after the fact.
+NON_ARTICLE_SITEMAP_PATTERNS = ("image-sitemap", "video-sitemap", "gallery-sitemap",
+                                 "photo-sitemap", "webstory-sitemap", "web-story-sitemap")
 # Each worker independently paces itself at the site's own crawl-delay
 # (e.g. 1 request/2s each), so N workers on one site achieve roughly N
 # times the aggregate throughput while no single connection ever exceeds
 # the polite per-connection rate -- the same model Scrapy's
 # CONCURRENT_REQUESTS_PER_DOMAIN uses. Kept modest (not dozens) so this
 # stays "friendly low-speed" in aggregate, not a burst hammering one site.
-WORKERS_PER_SITE = 10
+WORKERS_PER_SITE = 20
 
 # Many sites host a sitemap/feed without declaring it in robots.txt, so these
 # common paths are always tried in addition to whatever robots.txt lists.
@@ -131,7 +142,12 @@ def discover_article_urls(homepage, robots_cache, max_urls, log_prefix=""):
     # 404s too was a bug: three unrelated guessed-path 404s could trip the
     # breaker right as it reached a site's real (and working) archive,
     # discarding hundreds of legitimate child sitemaps for no reason.
-    frontier = [(u, 0, False) for u in declared] + [(u, 0, True) for u in fallback if u not in declared]
+    def _is_non_article_sitemap(u):
+        lu = u.lower()
+        return any(pat in lu for pat in NON_ARTICLE_SITEMAP_PATTERNS)
+
+    frontier = [(u, 0, False) for u in declared if not _is_non_article_sitemap(u)]
+    frontier += [(u, 0, True) for u in fallback if u not in declared]
 
     found = []
     found_set = set()
@@ -164,6 +180,8 @@ def discover_article_urls(homepage, robots_cache, max_urls, log_prefix=""):
             continue  # fallback-guessed path resolved to an HTML page, not a real sitemap
         children, pages = _parse_sitemap_xml(raw)
         for c in children:
+            if _is_non_article_sitemap(c):
+                continue
             frontier.append((c, depth + 1, is_guess))
         for p in pages:
             if p in found_set:
