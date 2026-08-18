@@ -69,6 +69,14 @@ SITES = [
     # hindi.oneindia.com (both disallow ClaudeBot/anthropic-ai),
     # livehindi.tv (unreachable).
     {"name": "timesnowhindi", "homepage": "https://www.timesnowhindi.com"},
+    # Fourth pass: timesnowhindi's bulk queue also drained after carrying
+    # most of the growth from 90M to 110M tokens. hindi.opindia.com has a
+    # real WordPress post-sitemap archive (85 sub-sitemaps back to 2019)
+    # and no AI-bot restrictions. thelallantop.com was checked and
+    # dropped: its sitemap index is all topic/category/live-event
+    # sitemaps, no dated post archive. ndtv (khabar.ndtv.com) 403s on
+    # robots.txt; webdunia.com and dw.com both disallow anthropic-ai.
+    {"name": "opindia_hindi", "homepage": "https://hindi.opindia.com"},
 ]
 
 OUT_DIR = os.path.join(os.path.dirname(__file__), "raw", "manual", "news_scrape")
