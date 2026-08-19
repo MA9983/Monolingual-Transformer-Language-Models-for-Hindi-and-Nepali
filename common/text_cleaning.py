@@ -66,6 +66,39 @@ def content_hash(text):
     return hashlib.sha1(norm.encode("utf-8")).hexdigest()
 
 
+DEVANAGARI_WORD_RE = re.compile(r"[ऀ-ॿ]+")
+
+
+def load_badwords_set(path):
+    """Read a one-term-per-line badwords list (# comments / blank lines
+    ignored) into a set for exact whole-word lookup.
+
+    Deliberately NOT a substring/regex-\\b match: Python's \\b treats
+    Devanagari combining vowel signs (matra) as non-word characters, so a
+    naive \\b-anchored regex would false-match a listed root (e.g. the
+    listed word "मुठ्ठ") as a "whole word" inside a completely unrelated,
+    benign word that merely starts with the same consonant sequence before
+    its vowel sign (e.g. "मुठ्ठी", meaning "fist") -- verified directly
+    during development. Extracting whole Devanagari-codepoint runs as
+    tokens and comparing by exact set membership avoids that false-positive
+    class entirely, at the cost of needing common inflected spellings
+    listed explicitly (already done in badwords_hindi.txt/badwords_nepali.txt).
+    """
+    terms = set()
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                terms.add(line)
+    return terms
+
+
+def contains_bad_word(text, badwords):
+    if not badwords:
+        return False
+    return any(w in badwords for w in DEVANAGARI_WORD_RE.findall(text))
+
+
 class Deduplicator:
     """Tracks content hashes across an arbitrarily large stream without
     keeping the original text in memory twice.

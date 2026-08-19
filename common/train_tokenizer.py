@@ -10,17 +10,26 @@ Hindi and Nepali.
 """
 
 import os
+from collections import Counter
 
 import sentencepiece as spm
 
 
 def train_one(input_path, model_prefix, vocab_size, model_type="bpe",
-               character_coverage=0.9995, byte_fallback=True, input_sentence_size=5_000_000):
+               character_coverage=0.9995, byte_fallback=True, input_sentence_size=1_000_000):
     """Train one SentencePiece model. byte_fallback=True guarantees zero
     true UNKs (any byte sequence can be represented), which is why the
     sweep's selection criterion below focuses on fertility rather than
     UNK rate alone -- UNK rate is still reported since it is a required
     deliverable statistic and remains meaningful for model_type="unigram".
+
+    input_sentence_size=1,000,000 (randomly sampled via
+    shuffle_input_sentence=True) rather than the full multi-million-line
+    train split: SentencePiece's BPE trainer memory use is a large
+    multiple of the sampled text size, and this machine's available RAM
+    is limited by other running processes, so training on the full ~6-8M
+    line split risked OOM. 1M sentences is still a large, representative
+    sample for subword statistics at this corpus scale.
     """
     spm.SentencePieceTrainer.train(
         input=input_path,
@@ -67,6 +76,53 @@ def evaluate(model_path, eval_path, max_lines=50_000):
     }
 
 
+def token_frequency_stats(model_path, corpus_path, max_lines=200_000, top_n=20):
+    """Encode a sample of `corpus_path` with the final trained model and
+    report the piece-frequency distribution -- a required Phase 1
+    deliverable ("token-frequency statistics") that plain fertility/UNK-rate
+    evaluation doesn't cover. Measured on the training-side sample (not
+    val) since this describes the vocabulary's own usage profile, not a
+    held-out generalization metric.
+    """
+    sp = spm.SentencePieceProcessor(model_file=model_path)
+    counts = Counter()
+    n_lines = total_tokens = 0
+    with open(corpus_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            ids = sp.encode(line, out_type=int)
+            counts.update(ids)
+            total_tokens += len(ids)
+            n_lines += 1
+            if n_lines >= max_lines:
+                break
+
+    vocab_size = sp.vocab_size()
+    used_ids = len(counts)
+    freqs = sorted(counts.values(), reverse=True)
+    top_pieces = [
+        {"piece": sp.id_to_piece(tid), "id": tid, "count": c, "frequency": c / total_tokens}
+        for tid, c in counts.most_common(top_n)
+    ]
+    top_100_coverage = sum(freqs[:100]) / total_tokens if total_tokens else None
+
+    return {
+        "sample_lines": n_lines,
+        "sample_total_tokens": total_tokens,
+        "vocab_size": vocab_size,
+        "unique_tokens_used_in_sample": used_ids,
+        "unused_tokens_in_sample": vocab_size - used_ids,
+        "pct_vocab_used_in_sample": used_ids / vocab_size if vocab_size else None,
+        "min_count": freqs[-1] if freqs else None,
+        "max_count": freqs[0] if freqs else None,
+        "mean_count": (sum(freqs) / len(freqs)) if freqs else None,
+        "top_100_tokens_share_of_all_occurrences": top_100_coverage,
+        "top_tokens": top_pieces,
+    }
+
+
 def sample_tokenizations(model_path, examples):
     sp = spm.SentencePieceProcessor(model_file=model_path)
     out = []
@@ -108,6 +164,7 @@ def sweep_and_train(language, train_path, val_path, out_dir, candidate_vocab_siz
     final_prefix = os.path.join(out_dir, f"{language}_tokenizer")
     train_one(train_path, final_prefix, chosen_vocab_size, model_type=model_type)
     final_eval = evaluate(final_prefix + ".model", val_path, max_lines=200_000)
+    freq_stats = token_frequency_stats(final_prefix + ".model", train_path)
     examples = sample_tokenizations(final_prefix + ".model", sample_texts or [])
 
     for vs in candidate_vocab_sizes:
@@ -125,5 +182,6 @@ def sweep_and_train(language, train_path, val_path, out_dir, candidate_vocab_siz
         "final_model_path": final_prefix + ".model",
         "final_vocab_path": final_prefix + ".vocab",
         "final_eval_on_full_val": final_eval,
+        "token_frequency_stats": freq_stats,
         "tokenization_examples": examples,
     }
