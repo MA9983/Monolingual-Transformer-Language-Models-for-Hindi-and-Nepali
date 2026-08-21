@@ -1,0 +1,102 @@
+{
+  "language": "nepali",
+  "chars_per_token_assumption": 4.5,
+  "sources": [
+    {
+      "name": "indiccorp_downloaded",
+      "type": "downloaded",
+      "path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/nepali/data/raw/downloaded/indiccorp/nepali_indiccorp_raw.txt",
+      "near_dedup_enabled": false,
+      "raw_records": 8374452,
+      "kept_records": 8033023,
+      "invalid_records": 248015,
+      "repetitive_records": 81,
+      "duplicate_records": 93248,
+      "near_duplicate_records": 0,
+      "unsafe_records": 85,
+      "raw_chars": 1823030903,
+      "estimated_raw_tokens": 405117978.4444444,
+      "invalid_chars_removed": 6924597,
+      "repetitive_chars_removed": 24693,
+      "duplicate_chars_removed": 16001023,
+      "near_duplicate_chars_removed": 0,
+      "unsafe_chars_removed": 82234,
+      "kept_chars": 1800000113,
+      "estimated_kept_tokens": 400000025.1111111,
+      "chars_reduction_from_cleaning_dedup": 23030790,
+      "pct_chars_reduction_from_cleaning_dedup": 0.012633241686742817,
+      "capped_at_max_kept_chars": true
+    },
+    {
+      "name": "news_scrape_manual",
+      "type": "manual",
+      "path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/nepali/data/raw/manual/news_scrape/scraped_articles.txt",
+      "near_dedup_enabled": true,
+      "raw_records": 280345,
+      "kept_records": 233112,
+      "invalid_records": 39131,
+      "repetitive_records": 0,
+      "duplicate_records": 1337,
+      "near_duplicate_records": 6760,
+      "unsafe_records": 5,
+      "raw_chars": 429834692,
+      "estimated_raw_tokens": 95518820.44444445,
+      "invalid_chars_removed": 6629426,
+      "repetitive_chars_removed": 0,
+      "duplicate_chars_removed": 847742,
+      "near_duplicate_chars_removed": 9285107,
+      "unsafe_chars_removed": 22265,
+      "kept_chars": 407414663,
+      "estimated_kept_tokens": 90536591.77777778,
+      "chars_reduction_from_cleaning_dedup": 22420029,
+      "pct_chars_reduction_from_cleaning_dedup": 0.05215965443757155,
+      "capped_at_max_kept_chars": false
+    },
+    {
+      "name": "wikipedia_scrape_manual",
+      "type": "manual",
+      "path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/nepali/data/raw/manual/wikipedia_scrape/scraped_wikipedia.txt",
+      "near_dedup_enabled": true,
+      "raw_records": 52009,
+      "kept_records": 24821,
+      "invalid_records": 24968,
+      "repetitive_records": 0,
+      "duplicate_records": 565,
+      "near_duplicate_records": 1653,
+      "unsafe_records": 2,
+      "raw_chars": 64209411,
+      "estimated_raw_tokens": 14268758.0,
+      "invalid_chars_removed": 1324174,
+      "repetitive_chars_removed": 0,
+      "duplicate_chars_removed": 261055,
+      "near_duplicate_chars_removed": 1104417,
+      "unsafe_chars_removed": 23414,
+      "kept_chars": 43670965,
+      "estimated_kept_tokens": 9704658.888888888,
+      "chars_reduction_from_cleaning_dedup": 20538446,
+      "pct_chars_reduction_from_cleaning_dedup": 0.319866600240267,
+      "capped_at_max_kept_chars": false
+    }
+  ],
+  "splits": {
+    "train": {
+      "records": 7876088,
+      "chars": 2138614328
+    },
+    "val": {
+      "records": 207528,
+      "chars": 56231353
+    },
+    "test": {
+      "records": 207340,
+      "chars": 56240060
+    }
+  },
+  "total_kept_chars": 2251085741,
+  "estimated_total_tokens": 500241275.7777778,
+  "manual_chars": 451085628,
+  "downloaded_chars": 1800000113,
+  "manual_fraction": 0.200385804851491,
+  "manual_fraction_meets_20pct_requirement": true,
+  "unique_records_seen": 8299369
+}

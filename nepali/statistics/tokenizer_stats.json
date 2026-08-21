@@ -1,0 +1,257 @@
+{
+  "language": "nepali",
+  "model_type": "bpe",
+  "sweep_candidates": [
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 5000,
+      "avg_chars_per_token": 3.7379177770747427,
+      "fertility_tokens_per_word": 1.725156723998675,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 2983888,
+      "vocab_size_requested": 5000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 7000,
+      "avg_chars_per_token": 4.029120423201983,
+      "fertility_tokens_per_word": 1.6004718920140861,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 2768229,
+      "vocab_size_requested": 7000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 9000,
+      "avg_chars_per_token": 4.235787730734686,
+      "fertility_tokens_per_word": 1.522383650173187,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 2633165,
+      "vocab_size_requested": 9000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 10000,
+      "avg_chars_per_token": 4.317991696592692,
+      "fertility_tokens_per_word": 1.4934012012953037,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 2583036,
+      "vocab_size_requested": 10000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 16000,
+      "avg_chars_per_token": 4.656748772092728,
+      "fertility_tokens_per_word": 1.3847631260504396,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 2395132,
+      "vocab_size_requested": 16000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 24000,
+      "avg_chars_per_token": 4.912699650185479,
+      "fertility_tokens_per_word": 1.3126171852641573,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 2270346,
+      "vocab_size_requested": 24000
+    }
+  ],
+  "selection_criterion": "human-reviewed: TA-recommended 5k-10k band, weighed against fertility diminishing returns and embedding-table cost vs. the ~25M-parameter budget (overrides the automatic 'lowest fertility' rule, which always selects the largest candidate once UNK rate is 0% at every candidate)",
+  "selected_vocab_size": 10000,
+  "final_model_path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/nepali/tokenizer/nepali_tokenizer.model",
+  "final_vocab_path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/nepali/tokenizer/nepali_tokenizer.vocab",
+  "final_eval_on_full_val": {
+    "eval_lines": 200000,
+    "vocab_size_actual": 10000,
+    "avg_chars_per_token": 4.314791789263015,
+    "fertility_tokens_per_word": 1.4946672443998508,
+    "unk_rate": 0.0,
+    "total_eval_tokens": 10382990
+  },
+  "token_frequency_stats": {
+    "sample_lines": 200000,
+    "sample_total_tokens": 10330982,
+    "vocab_size": 10000,
+    "unique_tokens_used_in_sample": 9880,
+    "unused_tokens_in_sample": 120,
+    "pct_vocab_used_in_sample": 0.988,
+    "min_count": 1,
+    "max_count": 258230,
+    "mean_count": 1045.645951417004,
+    "top_100_tokens_share_of_all_occurrences": 0.2750443278286614,
+    "top_tokens": [
+      {
+        "piece": "▁।",
+        "id": 277,
+        "count": 258230,
+        "frequency": 0.024995687728426978
+      },
+      {
+        "piece": ",",
+        "id": 9917,
+        "count": 190627,
+        "frequency": 0.018451972910222863
+      },
+      {
+        "piece": "।",
+        "id": 9902,
+        "count": 146936,
+        "frequency": 0.014222849289641584
+      },
+      {
+        "piece": "▁छ",
+        "id": 281,
+        "count": 133130,
+        "frequency": 0.012886480684991998
+      },
+      {
+        "piece": "▁र",
+        "id": 269,
+        "count": 133100,
+        "frequency": 0.012883576798410838
+      },
+      {
+        "piece": "को",
+        "id": 260,
+        "count": 96257,
+        "frequency": 0.009317313688088896
+      },
+      {
+        "piece": "मा",
+        "id": 262,
+        "count": 82001,
+        "frequency": 0.007937386784721917
+      },
+      {
+        "piece": "का",
+        "id": 263,
+        "count": 73238,
+        "frequency": 0.007089161514365236
+      },
+      {
+        "piece": "ले",
+        "id": 270,
+        "count": 68563,
+        "frequency": 0.006636639188801219
+      },
+      {
+        "piece": "▁पनि",
+        "id": 345,
+        "count": 58745,
+        "frequency": 0.005686293907007097
+      },
+      {
+        "piece": "लाई",
+        "id": 309,
+        "count": 54532,
+        "frequency": 0.005278491434792937
+      },
+      {
+        "piece": "▁छन्",
+        "id": 366,
+        "count": 45038,
+        "frequency": 0.004359508128075337
+      },
+      {
+        "piece": "▁भएको",
+        "id": 365,
+        "count": 44383,
+        "frequency": 0.004296106604386688
+      },
+      {
+        "piece": "▁लागि",
+        "id": 375,
+        "count": 42571,
+        "frequency": 0.004120711854884657
+      },
+      {
+        "piece": "▁गर्न",
+        "id": 383,
+        "count": 39138,
+        "frequency": 0.0037884104337806415
+      },
+      {
+        "piece": "▁हो",
+        "id": 363,
+        "count": 37162,
+        "frequency": 0.0035971411043016046
+      },
+      {
+        "piece": "▁एक",
+        "id": 372,
+        "count": 36233,
+        "frequency": 0.003507217416505033
+      },
+      {
+        "piece": "▁गरेको",
+        "id": 399,
+        "count": 35943,
+        "frequency": 0.0034791465128871583
+      },
+      {
+        "piece": "▁को",
+        "id": 350,
+        "count": 34659,
+        "frequency": 0.003354860167213533
+      },
+      {
+        "piece": "बाट",
+        "id": 370,
+        "count": 33100,
+        "frequency": 0.0032039548612126127
+      }
+    ]
+  },
+  "tokenization_examples": [
+    {
+      "text": "नेपाल हिमालयको काखमा रहेको सुन्दर देश हो।",
+      "pieces": [
+        "▁नेपाल",
+        "▁हिमाल",
+        "यको",
+        "▁का",
+        "ख",
+        "मा",
+        "▁रहेको",
+        "▁सुन्दर",
+        "▁देश",
+        "▁हो",
+        "।"
+      ],
+      "n_pieces": 11
+    },
+    {
+      "text": "प्रधानमन्त्रीले आज काठमाडौंमा एक महत्वपूर्ण बैठकको अध्यक्षता गर्नुभयो।",
+      "pieces": [
+        "▁प्रधानमन्त्रीले",
+        "▁आज",
+        "▁काठमाडौंमा",
+        "▁एक",
+        "▁महत्वपूर्ण",
+        "▁बैठकको",
+        "▁अध्यक्ष",
+        "ता",
+        "▁गर्नुभयो",
+        "।"
+      ],
+      "n_pieces": 10
+    },
+    {
+      "text": "क्रिकेट विश्वकपको फाइनल खेलमा नेपालले उत्कृष्ट प्रदर्शन गर्यो।",
+      "pieces": [
+        "▁क्रिकेट",
+        "▁विश्वक",
+        "पको",
+        "▁फाइनल",
+        "▁खेलमा",
+        "▁नेपालले",
+        "▁उत्कृष्ट",
+        "▁प्रदर्शन",
+        "▁गर्यो",
+        "।"
+      ],
+      "n_pieces": 10
+    }
+  ]
+}

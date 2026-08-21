@@ -20,10 +20,12 @@ TRAIN_PATH = os.path.join(HERE, "..", "data", "splits", "train.txt")
 VAL_PATH = os.path.join(HERE, "..", "data", "splits", "val.txt")
 STATS_PATH = os.path.join(HERE, "..", "statistics", "tokenizer_stats.json")
 
-# Smaller candidate range than Hindi: Nepali's corpus (and therefore its
-# unique-subword inventory) is expected to be considerably smaller, so an
-# oversized vocabulary would just carry redundant/near-unused pieces.
-CANDIDATE_VOCAB_SIZES = [8000, 16000, 24000, 32000]
+# Per TA guidance the best vocab size is expected in the 5k-10k range;
+# swept across that band plus two larger points (16k, 24k) so the
+# selection is empirically justified against a wider comparison, not just
+# asserted. Same range as Hindi (final corpus sizes ended up comparable,
+# ~500M vs ~507M tokens post-cleaning).
+CANDIDATE_VOCAB_SIZES = [5000, 7000, 9000, 10000, 16000, 24000]
 
 SAMPLE_TEXTS = [
     "नेपाल हिमालयको काखमा रहेको सुन्दर देश हो।",
