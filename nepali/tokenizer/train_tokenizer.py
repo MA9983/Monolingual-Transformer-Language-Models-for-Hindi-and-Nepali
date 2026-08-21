@@ -20,7 +20,7 @@ TRAIN_PATH = os.path.join(HERE, "..", "data", "splits", "train.txt")
 VAL_PATH = os.path.join(HERE, "..", "data", "splits", "val.txt")
 STATS_PATH = os.path.join(HERE, "..", "statistics", "tokenizer_stats.json")
 
-
+# swept across that band plus two larger points (16k, 24k) so the
 # selection is empirically justified against a wider comparison, not just
 # asserted. Same range as Hindi (final corpus sizes ended up comparable,
 # ~500M vs ~507M tokens post-cleaning).
