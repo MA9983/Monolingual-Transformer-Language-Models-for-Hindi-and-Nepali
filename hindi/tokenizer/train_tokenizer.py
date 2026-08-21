@@ -16,9 +16,11 @@ TRAIN_PATH = os.path.join(HERE, "..", "data", "splits", "train.txt")
 VAL_PATH = os.path.join(HERE, "..", "data", "splits", "val.txt")
 STATS_PATH = os.path.join(HERE, "..", "statistics", "tokenizer_stats.json")
 
-# "Tens of thousands" per the assignment; swept to pick the smallest
-# vocabulary that doesn't cost extra fertility, rather than assuming one.
-CANDIDATE_VOCAB_SIZES = [16000, 24000, 32000, 48000]
+# Per TA guidance the best vocab size is expected in the 5k-10k range;
+# swept across that band plus two larger points (16k, 24k) so the
+# selection is empirically justified against a wider comparison, not just
+# asserted.
+CANDIDATE_VOCAB_SIZES = [5000, 7000, 9000, 10000, 16000, 24000]
 
 SAMPLE_TEXTS = [
     "भारत एक विशाल देश है जहाँ अनेक भाषाएँ बोली जाती हैं।",

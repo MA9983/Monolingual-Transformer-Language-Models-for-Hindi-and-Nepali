@@ -1,0 +1,266 @@
+{
+  "language": "hindi",
+  "model_type": "bpe",
+  "sweep_candidates": [
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 5000,
+      "avg_chars_per_token": 3.436771965081957,
+      "fertility_tokens_per_word": 1.4838706070049354,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 4378825,
+      "vocab_size_requested": 5000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 7000,
+      "avg_chars_per_token": 3.6531853353319943,
+      "fertility_tokens_per_word": 1.3959666520724865,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 4119425,
+      "vocab_size_requested": 7000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 9000,
+      "avg_chars_per_token": 3.799689339449926,
+      "fertility_tokens_per_word": 1.3421425928210189,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 3960593,
+      "vocab_size_requested": 9000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 10000,
+      "avg_chars_per_token": 3.855676872789247,
+      "fertility_tokens_per_word": 1.3226536014867087,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 3903082,
+      "vocab_size_requested": 10000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 16000,
+      "avg_chars_per_token": 4.076791419164981,
+      "fertility_tokens_per_word": 1.2509163157060037,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 3691389,
+      "vocab_size_requested": 16000
+    },
+    {
+      "eval_lines": 50000,
+      "vocab_size_actual": 24000,
+      "avg_chars_per_token": 4.226229147260089,
+      "fertility_tokens_per_word": 1.206684428190534,
+      "unk_rate": 0.0,
+      "total_eval_tokens": 3560863,
+      "vocab_size_requested": 24000
+    }
+  ],
+  "selection_criterion": "human-reviewed: TA-recommended 5k-10k band, weighed against fertility diminishing returns and embedding-table cost vs. the ~25M-parameter budget (overrides the automatic 'lowest fertility' rule, which always selects the largest candidate once UNK rate is 0% at every candidate)",
+  "selected_vocab_size": 10000,
+  "final_model_path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/hindi/tokenizer/hindi_tokenizer.model",
+  "final_vocab_path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/hindi/tokenizer/hindi_tokenizer.vocab",
+  "final_eval_on_full_val": {
+    "eval_lines": 156611,
+    "vocab_size_actual": 10000,
+    "avg_chars_per_token": 3.887044978057299,
+    "fertility_tokens_per_word": 1.3226418527984163,
+    "unk_rate": 0.0,
+    "total_eval_tokens": 14623086
+  },
+  "token_frequency_stats": {
+    "sample_lines": 200000,
+    "sample_total_tokens": 15438061,
+    "vocab_size": 10000,
+    "unique_tokens_used_in_sample": 9860,
+    "unused_tokens_in_sample": 140,
+    "pct_vocab_used_in_sample": 0.986,
+    "min_count": 1,
+    "max_count": 489670,
+    "mean_count": 1565.7262677484787,
+    "top_100_tokens_share_of_all_occurrences": 0.3931386849682742,
+    "top_tokens": [
+      {
+        "piece": "▁के",
+        "id": 267,
+        "count": 489670,
+        "frequency": 0.03171836152221448
+      },
+      {
+        "piece": "।",
+        "id": 9895,
+        "count": 468857,
+        "frequency": 0.030370199988198
+      },
+      {
+        "piece": "▁में",
+        "id": 275,
+        "count": 370314,
+        "frequency": 0.023987079724584585
+      },
+      {
+        "piece": "▁है",
+        "id": 273,
+        "count": 311389,
+        "frequency": 0.020170214381197225
+      },
+      {
+        "piece": "▁की",
+        "id": 281,
+        "count": 302111,
+        "frequency": 0.01956923217235636
+      },
+      {
+        "piece": ",",
+        "id": 9906,
+        "count": 247519,
+        "frequency": 0.01603303679134316
+      },
+      {
+        "piece": "▁को",
+        "id": 283,
+        "count": 231889,
+        "frequency": 0.015020603947607151
+      },
+      {
+        "piece": "▁से",
+        "id": 288,
+        "count": 219697,
+        "frequency": 0.014230867464508658
+      },
+      {
+        "piece": "▁ने",
+        "id": 297,
+        "count": 168541,
+        "frequency": 0.010917238894184963
+      },
+      {
+        "piece": "▁का",
+        "id": 291,
+        "count": 166112,
+        "frequency": 0.010759900482320934
+      },
+      {
+        "piece": "▁और",
+        "id": 308,
+        "count": 155157,
+        "frequency": 0.010050290642069623
+      },
+      {
+        "piece": "▁पर",
+        "id": 298,
+        "count": 142397,
+        "frequency": 0.009223761973734914
+      },
+      {
+        "piece": "▁हैं",
+        "id": 321,
+        "count": 115751,
+        "frequency": 0.007497768016333139
+      },
+      {
+        "piece": "▁कि",
+        "id": 289,
+        "count": 114897,
+        "frequency": 0.007442450188530801
+      },
+      {
+        "piece": ".",
+        "id": 9915,
+        "count": 113740,
+        "frequency": 0.007367505543604213
+      },
+      {
+        "piece": "▁भी",
+        "id": 331,
+        "count": 93401,
+        "frequency": 0.006050047347267251
+      },
+      {
+        "piece": "▁लिए",
+        "id": 349,
+        "count": 76980,
+        "frequency": 0.004986377499091369
+      },
+      {
+        "piece": "▁एक",
+        "id": 353,
+        "count": 71415,
+        "frequency": 0.004625904768740064
+      },
+      {
+        "piece": "▁कर",
+        "id": 293,
+        "count": 71179,
+        "frequency": 0.004610617874874312
+      },
+      {
+        "piece": "▁इस",
+        "id": 312,
+        "count": 68564,
+        "frequency": 0.004441231317844903
+      }
+    ]
+  },
+  "tokenization_examples": [
+    {
+      "text": "भारत एक विशाल देश है जहाँ अनेक भाषाएँ बोली जाती हैं।",
+      "pieces": [
+        "▁भारत",
+        "▁एक",
+        "▁विशाल",
+        "▁देश",
+        "▁है",
+        "▁जहाँ",
+        "▁अनेक",
+        "▁भाषा",
+        "एँ",
+        "▁बोली",
+        "▁जाती",
+        "▁हैं",
+        "।"
+      ],
+      "n_pieces": 13
+    },
+    {
+      "text": "प्रधानमंत्री ने आज नई दिल्ली में एक महत्वपूर्ण बैठक की अध्यक्षता की।",
+      "pieces": [
+        "▁प्रधानमंत्री",
+        "▁ने",
+        "▁आज",
+        "▁नई",
+        "▁दिल्ली",
+        "▁में",
+        "▁एक",
+        "▁महत्वपूर्ण",
+        "▁बैठक",
+        "▁की",
+        "▁अध्यक्षता",
+        "▁की",
+        "।"
+      ],
+      "n_pieces": 13
+    },
+    {
+      "text": "क्रिकेट विश्व कप के फाइनल मैच में भारत ने शानदार जीत दर्ज की।",
+      "pieces": [
+        "▁क्रिकेट",
+        "▁विश्व",
+        "▁कप",
+        "▁के",
+        "▁फाइनल",
+        "▁मैच",
+        "▁में",
+        "▁भारत",
+        "▁ने",
+        "▁शानदार",
+        "▁जीत",
+        "▁दर्ज",
+        "▁की",
+        "।"
+      ],
+      "n_pieces": 14
+    }
+  ]
+}

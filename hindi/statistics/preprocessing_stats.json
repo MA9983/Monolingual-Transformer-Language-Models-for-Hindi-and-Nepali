@@ -1,0 +1,77 @@
+{
+  "language": "hindi",
+  "chars_per_token_assumption": 4.5,
+  "sources": [
+    {
+      "name": "indiccorp_downloaded",
+      "type": "downloaded",
+      "path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/hindi/data/raw/downloaded/indiccorp/hindi_indiccorp_raw.txt",
+      "near_dedup_enabled": false,
+      "raw_records": 6206383,
+      "kept_records": 6055336,
+      "invalid_records": 144930,
+      "repetitive_records": 4,
+      "duplicate_records": 4305,
+      "near_duplicate_records": 0,
+      "unsafe_records": 1808,
+      "raw_chars": 1817653089,
+      "estimated_raw_tokens": 403922908.6666667,
+      "invalid_chars_removed": 11328933,
+      "repetitive_chars_removed": 166,
+      "duplicate_chars_removed": 984218,
+      "near_duplicate_chars_removed": 0,
+      "unsafe_chars_removed": 7130484,
+      "kept_chars": 1800000073,
+      "estimated_kept_tokens": 400000016.2222222,
+      "chars_reduction_from_cleaning_dedup": 17653016,
+      "pct_chars_reduction_from_cleaning_dedup": 0.009711983054869939,
+      "capped_at_max_kept_chars": true
+    },
+    {
+      "name": "news_scrape_manual",
+      "type": "manual",
+      "path": "/home/mohd-ahmad/Documents/SEM3/LMA/Individual_project/hindi/data/raw/manual/news_scrape/scraped_articles.txt",
+      "near_dedup_enabled": true,
+      "raw_records": 235120,
+      "kept_records": 231874,
+      "invalid_records": 1536,
+      "repetitive_records": 0,
+      "duplicate_records": 399,
+      "near_duplicate_records": 1299,
+      "unsafe_records": 12,
+      "raw_chars": 497674666,
+      "estimated_raw_tokens": 110594370.22222222,
+      "invalid_chars_removed": 483534,
+      "repetitive_chars_removed": 0,
+      "duplicate_chars_removed": 200964,
+      "near_duplicate_chars_removed": 2613728,
+      "unsafe_chars_removed": 43633,
+      "kept_chars": 480632418,
+      "estimated_kept_tokens": 106807204.0,
+      "chars_reduction_from_cleaning_dedup": 17042248,
+      "pct_chars_reduction_from_cleaning_dedup": 0.0342437523231291,
+      "capped_at_max_kept_chars": false
+    }
+  ],
+  "splits": {
+    "train": {
+      "records": 5973084,
+      "chars": 2166767969
+    },
+    "val": {
+      "records": 156611,
+      "chars": 56840593
+    },
+    "test": {
+      "records": 157515,
+      "chars": 57023929
+    }
+  },
+  "total_kept_chars": 2280632491,
+  "estimated_total_tokens": 506807220.2222222,
+  "manual_chars": 480632418,
+  "downloaded_chars": 1800000073,
+  "manual_fraction": 0.21074522962235567,
+  "manual_fraction_meets_20pct_requirement": true,
+  "unique_records_seen": 6288509
+}
