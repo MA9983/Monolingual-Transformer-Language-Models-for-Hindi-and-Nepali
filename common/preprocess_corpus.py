@@ -16,8 +16,10 @@ import os
 
 from text_cleaning import (
     Deduplicator,
+    NearDuplicateDetector,
     contains_bad_word,
     content_hash,
+    is_repetitive_text,
     is_valid_line,
     load_badwords_set,
     normalize_unicode,
@@ -105,11 +107,29 @@ def run(language, sources, splits_dir, processed_dir, stats_path, badwords_path=
     list (see common/text_cleaning.py:load_badwords_set); any record
     containing one of its terms as a whole word is dropped, tracked
     separately from the invalid/duplicate counts.
+
+    Every record is also checked for internal repetition (a repeated
+    phrase dominating the text -- e.g. scraped boilerplate/spam that
+    survived extraction; see text_cleaning.is_repetitive_text), tracked
+    separately as "repetitive" and applied uniformly to all sources since
+    it is pure frequency counting with no meaningful memory/performance
+    cost at any granularity.
+
+    Each source dict may also set `near_dedup=True` to additionally run
+    MinHash/LSH fuzzy near-duplicate detection on that source (on top of
+    the always-on exact-hash Deduplicator) -- intended for manually
+    scraped article sources only; see NearDuplicateDetector's docstring
+    for why it is not applied to multi-million-line downloaded sources.
+    One NearDuplicateDetector is shared across all near_dedup=True sources
+    within this run, so a near-duplicate spanning two different manual
+    sources (e.g. the same wire story appearing on two scraped sites) is
+    still caught.
     """
     os.makedirs(splits_dir, exist_ok=True)
     os.makedirs(processed_dir, exist_ok=True)
     badwords = load_badwords_set(badwords_path) if badwords_path else None
     dedup = Deduplicator()
+    near_dedup = NearDuplicateDetector()
     split_files = {name: open(os.path.join(splits_dir, f"{name}.txt"), "w", encoding="utf-8")
                     for name in SPLIT_RATIOS}
     # Combined, pre-split cleaned+deduplicated corpus (every kept record from
@@ -137,8 +157,11 @@ def run(language, sources, splits_dir, processed_dir, stats_path, badwords_path=
             # source to a fixed size so the corpus lands at a target overall
             # manual fraction without touching the manual side at all.
             max_kept_chars = src.get("max_kept_chars")
+            use_near_dedup = src.get("near_dedup", False)
             raw_records = kept_records = invalid_records = dup_records = unsafe_records = 0
+            repetitive_records = near_dup_records = 0
             kept_chars = raw_chars = invalid_chars = dup_chars = unsafe_chars = 0
+            repetitive_chars = near_dup_chars = 0
             capped = False
             for raw in iter_records(src["path"], src["granularity"]):
                 if max_kept_chars is not None and kept_chars >= max_kept_chars:
@@ -151,6 +174,10 @@ def run(language, sources, splits_dir, processed_dir, stats_path, badwords_path=
                     invalid_records += 1
                     invalid_chars += len(raw)
                     continue
+                if is_repetitive_text(cleaned):
+                    repetitive_records += 1
+                    repetitive_chars += len(cleaned)
+                    continue
                 if contains_bad_word(cleaned, badwords):
                     unsafe_records += 1
                     unsafe_chars += len(cleaned)
@@ -158,6 +185,10 @@ def run(language, sources, splits_dir, processed_dir, stats_path, badwords_path=
                 if dedup.is_duplicate(cleaned):
                     dup_records += 1
                     dup_chars += len(cleaned)
+                    continue
+                if use_near_dedup and near_dedup.is_near_duplicate(cleaned):
+                    near_dup_records += 1
+                    near_dup_chars += len(cleaned)
                     continue
                 bucket = split_bucket(cleaned)
                 split_files[bucket].write(cleaned + "\n")
@@ -175,11 +206,16 @@ def run(language, sources, splits_dir, processed_dir, stats_path, badwords_path=
                           f"{kept_records:,} kept so far", flush=True)
             stats["sources"].append({
                 "name": src["name"], "type": src["type"], "path": src["path"],
+                "near_dedup_enabled": use_near_dedup,
                 "raw_records": raw_records, "kept_records": kept_records,
-                "invalid_records": invalid_records, "duplicate_records": dup_records,
+                "invalid_records": invalid_records, "repetitive_records": repetitive_records,
+                "duplicate_records": dup_records, "near_duplicate_records": near_dup_records,
                 "unsafe_records": unsafe_records,
                 "raw_chars": raw_chars, "estimated_raw_tokens": raw_chars / CHARS_PER_TOKEN,
-                "invalid_chars_removed": invalid_chars, "duplicate_chars_removed": dup_chars,
+                "invalid_chars_removed": invalid_chars,
+                "repetitive_chars_removed": repetitive_chars,
+                "duplicate_chars_removed": dup_chars,
+                "near_duplicate_chars_removed": near_dup_chars,
                 "unsafe_chars_removed": unsafe_chars,
                 "kept_chars": kept_chars, "estimated_kept_tokens": kept_chars / CHARS_PER_TOKEN,
                 "chars_reduction_from_cleaning_dedup": raw_chars - kept_chars,
@@ -189,7 +225,8 @@ def run(language, sources, splits_dir, processed_dir, stats_path, badwords_path=
             })
             cap_note = f" (capped at {max_kept_chars:,} chars)" if capped else ""
             print(f"[{language}/{src['name']}] done: raw={raw_records:,} kept={kept_records:,} "
-                  f"invalid={invalid_records:,} dup={dup_records:,} unsafe={unsafe_records:,} "
+                  f"invalid={invalid_records:,} repetitive={repetitive_records:,} "
+                  f"dup={dup_records:,} near_dup={near_dup_records:,} unsafe={unsafe_records:,} "
                   f"kept_chars={kept_chars:,} "
                   f"(~{kept_chars/CHARS_PER_TOKEN/1e6:.1f}M est. tokens){cap_note}", flush=True)
     finally:

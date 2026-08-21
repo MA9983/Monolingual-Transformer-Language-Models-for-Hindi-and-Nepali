@@ -1,0 +1,31 @@
+# Nepali profanity/vulgarity word list for safety filtering (common/preprocess_corpus.py).
+# One term per line (Devanagari script, matched with Unicode word boundaries so it
+# only matches whole words, not substrings inside unrelated words). Lines starting
+# with # are comments. Nepali internet/spoken slang shares much of its vulgar
+# vocabulary with Hindi (same script family, heavy lexical borrowing), plus a few
+# Nepali-specific terms (muji and its inflections) -- see badwords_hindi.txt for the
+# same scope note (explicit vulgarity only, no ambiguous/polysemous words).
+चूतिया
+चुतिया
+चूत
+चुत
+भोसड़ी
+भोसड़ा
+गांड
+गांडू
+लंड
+लौडा
+लौड़ा
+रंडी
+हरामी
+हरामजादा
+कमिना
+भडुवा
+भड़वा
+झाट
+मादरचोद
+बहनचोद
+चोदाई
+मुजी
+मुजिहरु
+मुजीले

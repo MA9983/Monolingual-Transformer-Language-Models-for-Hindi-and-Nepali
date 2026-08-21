@@ -1,0 +1,51 @@
+# Hindi profanity/vulgarity word list for safety filtering (common/preprocess_corpus.py).
+# One term per line (Devanagari script, matched with Unicode word boundaries so it
+# only matches whole words, not substrings inside unrelated words). Lines starting
+# with # are comments. Scope: explicit sexual/scatological vulgarity and unambiguous
+# abusive terms only -- deliberately excludes polysemous words (e.g. animal names used
+# as insults, "hour"/"bell" style double-meanings) that would cause heavy false-positive
+# removal of legitimate news/encyclopedic content.
+चूतिया
+चुतिया
+चूतिये
+चुतिये
+चूत
+चुत
+भोसड़ी
+भोसड़ा
+भोसड़ीके
+भोसड़ीवाला
+भोसड़ीवाले
+गांड
+गाण्ड
+गांडू
+गांडु
+गंडू
+लंड
+लौड़ा
+लौड़े
+लौड़ी
+लोड़ा
+रंडी
+रंडीबाज
+हरामज़ादा
+हरामजादा
+हरामखोर
+हरामी
+कमीना
+कमीनी
+भड़वा
+भड़वे
+झाट
+झाटू
+मादरचोद
+मादरचूत
+बहनचोद
+बहनचूत
+चोदू
+चुदाई
+चुदवा
+लुल्ली
+चूची
+चूचियां
+लंडफकीर
