@@ -1,0 +1,20 @@
+{
+  "language": "hindi",
+  "batch_size": 64,
+  "context_length": 256,
+  "learning_rate": 3e-4,
+  "min_learning_rate": 3e-5,
+  "weight_decay": 0.1,
+  "adam_beta1": 0.9,
+  "adam_beta2": 0.95,
+  "adam_eps": 1e-8,
+  "grad_clip_norm": 1.0,
+  "warmup_steps": 1000,
+  "lr_schedule": "cosine_decay_after_warmup",
+  "max_steps": 30000,
+  "eval_interval_steps": 500,
+  "eval_batches": 50,
+  "checkpoint_interval_steps": 1000,
+  "seed": 1337,
+  "_notes": "batch_size=64 x context_length=256 = 16,384 tokens/step; max_steps=30000 -> ~491M tokens, approximately one pass over the ~506.81M-token Hindi train split. Values are starting points meant to be adjusted once real Kaggle-GPU step throughput is measured; checkpointing every 1000 steps (with full optimizer/scheduler/step state) is what makes resuming across separate Kaggle sessions possible."
+}

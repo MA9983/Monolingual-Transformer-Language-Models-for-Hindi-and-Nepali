@@ -1,0 +1,19 @@
+{
+  "language": "hindi",
+  "vocab_size": 10000,
+  "d_model": 512,
+  "n_layers": 6,
+  "n_heads": 8,
+  "d_ff": 2208,
+  "context_length": 256,
+  "embed_dropout": 0.1,
+  "attn_dropout": 0.1,
+  "resid_dropout": 0.1,
+  "tie_embeddings": true,
+  "positional_encoding": "rope",
+  "rope_base": 10000,
+  "activation": "gelu",
+  "norm_placement": "pre-norm",
+  "_num_parameters_verified": 25019328,
+  "_num_parameters_verified_note": "Exact count from GPTLanguageModel.num_parameters() (hindi/model/gpt.py), matches nepali/configs/model_config.json since both languages' Phase 1 tokenizers landed on vocab_size=10000; weights are independently initialized and trained per language regardless. d_ff=2208 (not the more common 4x-d_model ratio of 2048) was chosen specifically to land the total parameter count almost exactly on the assignment's ~25M target (25,019,328, ~0.08% over) rather than the 24.04M an exact-4x ratio gives."
+}
