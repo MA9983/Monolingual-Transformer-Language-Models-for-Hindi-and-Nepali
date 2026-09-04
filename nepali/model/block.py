@@ -20,9 +20,12 @@ from attention import CausalSelfAttention
 class FeedForward(nn.Module):
     """Position-wise feed-forward network: two linear layers with a GELU
     non-linearity between them, and an inner dimension (`d_ff`) larger
-    than `d_model` (4x here, the standard Transformer ratio) so the block
-    can represent a richer, higher-dimensional intermediate transformation
-    before projecting back down.
+    than `d_model` (2208 vs. 512, ~4.3x here -- close to but not exactly
+    the common 4x ratio, deliberately tuned so the model's total parameter
+    count lands almost exactly on the assignment's ~25M target rather than
+    the 24.04M an exact 4x/2048 ratio gives) so the block can represent a
+    richer, higher-dimensional intermediate transformation before
+    projecting back down.
     """
 
     def __init__(self, d_model, d_ff, dropout):
