@@ -115,6 +115,35 @@ more than the extra depth would buy back; going shallower/wider risks under-usin
 compositional structure attention needs several layers to build up. Six layers at `d_model=512`
 keeps every layer reasonably expressive while still comfortably fitting the compute and time budget.
 
+### 1.6 Additional design-decision justifications
+
+A few further architecture choices, stated in the config table above but not yet explained:
+
+- **GELU over SwiGLU** (both permitted by the assignment): GELU was chosen for a simpler,
+  well-understood non-linearity at this scale. SwiGLU's gating mechanism needs roughly 1.5x the
+  hidden width to stay parameter-matched against a plain GELU feed-forward of the same budget,
+  adding tuning complexity without a clearly demonstrated benefit at 25M parameters — the
+  literature's SwiGLU gains are best evidenced at much larger scale.
+- **8 heads, `d_head=64`**: not 4 (too few, each head forced to represent an overly broad mix of
+  relationships) or 16 (`d_head=32`, too narrow to give each head a useful subspace). 64 sits in
+  the conventional range (typically 64-128) used across GPT-2/3-style models at comparable
+  `d_model`, letting each head specialize while keeping enough dimensions per head to be
+  expressive.
+- **`context_length=256`**: attention cost scales quadratically with sequence length, so this is
+  a direct compute-budget trade-off, not an arbitrary number. 512 or 1024 would roughly
+  4x/16x the attention FLOPs per step for the same batch size, meaningfully slowing throughput on
+  a single free Kaggle GPU session within a bounded time limit; 256 was chosen to keep training
+  fast enough to reach 30,000 steps in the available compute, while still covering multiple
+  sentences of real context per example.
+- **Fused QKV projection** (`nn.Linear(d_model, 3*d_model)` instead of three separate
+  `d_model -> d_model` layers): an *implementation*-efficiency choice, not an architectural one —
+  mathematically identical to three separate projections, but one matmul instead of three reduces
+  kernel-launch overhead.
+- **Reusing Phase 1's `vocab_size=10,000` tokenizer as-is**: because Phase 1's SentencePiece
+  tokenizers were trained with `byte_fallback=True`, both languages already had a **0.0% UNK
+  rate** on held-out text before Phase 2 began — so Phase 2 training never had to design around
+  unrepresentable tokens, a Phase 1 decision that quietly simplified Phase 2's data pipeline.
+
 ---
 
 ## 2. Pretraining (Section 2.2)
@@ -135,6 +164,26 @@ Phase 1 corpus (Hindi: 506.81M tokens, 21.07% manual; Nepali: 500.24M tokens, 20
 approximately one full pass over each training split, matching the assignment's ~500M-token
 pretraining target for both models. Neither model was initialized from the other; each instantiates
 its own `GPTLanguageModel` with its own randomly-initialized weights.
+
+**Training-hyperparameter justifications**:
+
+- **`30,000` steps was not an arbitrary round number** — it follows directly from
+  `batch_size × context_length = 16,384` tokens/step: `30,000 × 16,384 ≈ 491.5M` tokens, chosen
+  to land at approximately one full pass over each ~500M-token corpus, matching the assignment's
+  pretraining-token target while fitting inside a Kaggle GPU session's practical time budget.
+- **AdamW `β2=0.95`** (PyTorch's default is `0.999`): a smaller `β2` shortens the optimizer's
+  gradient-variance averaging window, making it adapt faster early in training — a convention
+  from GPT-3/nanoGPT-style small-to-mid-scale LLM training recipes, used here for the same
+  reason: faster useful progress within a limited step budget, at some cost to late-training
+  smoothness that a longer, larger-scale run wouldn't need to trade off.
+- **Linear warmup (1,000 steps) into cosine decay**, rather than a constant learning rate: warmup
+  avoids destabilizing the randomly-initialized weights with the full peak learning rate before
+  the optimizer's moment estimates have accumulated any real signal; cosine decay then tapers the
+  rate smoothly toward `min_learning_rate` rather than dropping it in sharp steps, which
+  empirically tends to reach a better final loss than a step schedule for this style of training.
+- **`grad_clip_norm=1.0`**: caps the gradient norm on every step, guarding against rare large
+  gradient spikes (common early in training or on unusual batches) from destabilizing the
+  optimizer — a standard, low-cost stabilizer for Transformer training at any scale.
 
 ### 2.1 Loss curves and graph observations
 
@@ -426,8 +475,9 @@ data.
   independent per language, no shared modules)
 - Training logs / loss curves / all figures / raw results: `hindi/statistics/phase2_eval_outputs/`,
   `nepali/statistics/phase2_eval_outputs/`
-- Trained checkpoints (287MB each, git-ignored — see `.gitignore`): currently hosted as private
+- Trained checkpoints (287MB each, git-ignored — see `.gitignore`): on **Google Drive** per the
+  assignment's requirement (links in the top-level `README.md`), also mirrored as private
   Kaggle datasets (`mohdahmad2868/phase2-hindi-checkpoint-30000`,
-  `mohdahmad2868/phase2-nepali-checkpoint-30000`); **Google Drive links per the assignment's
-  requirement are still pending** and will be added to the top-level `README.md`.
+  `mohdahmad2868/phase2-nepali-checkpoint-30000`) used internally for the Kaggle training
+  notebook's checkpoint-resume logic.
 - Kaggle notebook used for both training runs: [`kaggle_upload/phase2_train_eval.ipynb`](../kaggle_upload/phase2_train_eval.ipynb)

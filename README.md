@@ -197,17 +197,17 @@ this size:
 
 ### Model checkpoints (Phase 2)
 
-Both models' final trained checkpoints (287MB each, step 30,000) are currently hosted as
-private Kaggle datasets:
+Both models' final trained checkpoints (287MB each, step 30,000) are on **Google Drive**, per
+the assignment's requirement:
+
+- Hindi (Model H): https://drive.google.com/drive/folders/1tTNVUWEWY_XBndpydWlWrvdZKqlNv767?usp=drive_link
+- Nepali (Model L): https://drive.google.com/drive/folders/18_YRwO17Q8djKI3IxoCVtV_mbpQhoGij?usp=drive_link
+
+They're also mirrored as private Kaggle datasets (used internally to feed the Kaggle training
+notebook's checkpoint-resume logic):
 
 - Hindi (Model H): https://www.kaggle.com/datasets/mohdahmad2868/phase2-hindi-checkpoint-30000
 - Nepali (Model L): https://www.kaggle.com/datasets/mohdahmad2868/phase2-nepali-checkpoint-30000
-
-> **Pending**: the assignment specifically requires checkpoints on **Google Drive** with
-> shareable links here. That upload has not been done yet — the Kaggle links above are a
-> working interim source (checkpoints are downloadable from them the same way they were
-> pulled down for local evaluation) but should not be treated as satisfying the Drive
-> requirement until this note is removed.
 
 **Checkpoint format** (both languages, identical schema — see `Trainer.save_checkpoint` /
 `load_checkpoint` in `hindi/train/trainer.py`): each `checkpoint_step<N>.pt` is a single
@@ -329,8 +329,6 @@ once that phase is completed.
 
 ## Known limitations / pending work
 
-- **Google Drive checkpoint links** — required by the assignment, not yet done (see "Model
-  checkpoints" above). Kaggle dataset links are a working interim substitute.
 - **Generation-quality evaluation** now uses real held-out prefix/reference pairs sampled from
   each language's `data/splits/test.txt` (fixed as of this report), scored under greedy
   decoding and temperatures 0.5/1.0/1.5 — see `report/phase2_report.md` Section 4 for the
@@ -339,9 +337,5 @@ once that phase is completed.
 - **Attention-head local/content-based discussion** is written up quantitatively in
   `report/phase2_report.md` Section 5 (entropy/distance grid analysis), not just the raw
   heatmap images.
-- Two leftover artifacts at the repo root, `kaggle_phase2_upload/` and
-  `kaggle_phase2_upload.zip`, are an earlier, now-superseded packaging attempt (before the
-  Kaggle-API-automation and auto-discovery setup described above) — not referenced by any
-  current workflow, kept only pending a cleanup decision.
 - Phase 3 (reasoning finetuning, post-finetune attention comparison, final consolidated
   report) has not started.

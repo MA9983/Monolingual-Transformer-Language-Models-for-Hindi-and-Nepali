@@ -16,3 +16,6 @@ nepali/data/splits/
 *.ckpt
 *.pt
 *.bin
+
+# Real Kaggle API credentials (kaggle.json) -- must never be committed.
+kaggle_upload/credentials/
