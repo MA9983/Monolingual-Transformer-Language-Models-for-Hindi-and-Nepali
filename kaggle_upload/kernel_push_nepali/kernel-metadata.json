@@ -1,0 +1,19 @@
+{
+  "id": "mohdahmad2868/phase2-nepali-training",
+  "title": "phase2-nepali-training",
+  "code_file": "phase2_train_eval.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "mohdahmad2868/phase2-code-tokenizers",
+    "mohdahmad2868/hindi-processed-dataset",
+    "mohdahmad2868/nepali-processed-dataset"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}
