@@ -13,6 +13,41 @@ language, from the assignment's allowed list). Both are completely independent d
 Transformer language models, built from scratch — separate data, separate tokenizer, separate
 weights, at every stage.
 
+## Full project pipeline (preprocessing → training, all three phases)
+
+Every stage below runs **twice, completely independently** — once for Hindi, once for
+Nepali — with no shared data, vocabulary, or weights at any point.
+
+```mermaid
+flowchart TD
+    A[Raw text sources<br/>IndicCorp v2 download + news/Wikipedia scraping] --> B[Cleaning & preprocessing<br/>Unicode normalization, quality filter,<br/>repetitive-doc removal, safety filter,<br/>exact + near-dedup]
+    B --> C[Train / val / test split<br/>95% / 2.5% / 2.5%]
+    C --> D[Tokenizer training<br/>SentencePiece BPE, vocab=10,000,<br/>own tokenizer per language]
+    D --> E[Tokenize splits to .bin arrays<br/>prepare_data.py]
+    E --> F[Pretraining from scratch<br/>decoder-only Transformer, RoPE,<br/>AdamW, 30,000 steps]
+    F --> G[Pretrained checkpoint<br/>checkpoint_step30000.pt]
+    G --> H[Phase 2 evaluation<br/>PPL / BPB, generation quality,<br/>attention analysis]
+    G --> I[Synthetic reasoning dataset<br/>generate_reasoning_data.py<br/>pairwise / transitive3 / chain]
+    I --> J[Reasoning finetuning<br/>loss masked to answer span,<br/>1,000 steps from the pretrained checkpoint]
+    J --> K[Finetuned checkpoint<br/>finetune_step1000.pt]
+    K --> L[Phase 3 evaluation<br/>pretrained-vs-finetuned accuracy,<br/>error analysis, attention comparison]
+```
+
+**Where each stage's code lives** (same layout for both `hindi/` and `nepali/`):
+
+| Stage | Code | Phase |
+|---|---|---|
+| Data collection | `common/download_indiccorp.py`, `common/news_scraper.py`, `common/wikipedia_scraper.py` | 1 |
+| Cleaning, splitting | `<lang>/data/preprocess.py` | 1 |
+| Tokenizer training | `<lang>/tokenizer/train_tokenizer.py` | 1 |
+| Tokenize to binary | `<lang>/train/prepare_data.py` | 2 |
+| Model architecture | `<lang>/model/{embeddings,attention,block,rope,gpt}.py` | 2 |
+| Pretraining | `<lang>/train/trainer.py`, driven by `kaggle_upload/phase2_train_eval.ipynb` | 2 |
+| Pretrained-model evaluation | `<lang>/eval/{lm_metrics,generation_metrics,attention_analysis,plotting}.py` | 2 |
+| Reasoning dataset generation | `<lang>/reasoning/generate_reasoning_data.py` | 3 |
+| Finetuning | `<lang>/finetune/{dataset,finetune_trainer}.py`, `run_finetune.py` | 3 |
+| Finetuned-model evaluation | `<lang>/finetune/{run_reasoning_eval,run_attention_comparison}.py` | 3 |
+
 ---
 
 # Part I — Phase 1: Data Collection and Tokenizer Construction
@@ -20,6 +55,23 @@ weights, at every stage.
 Two independent text corpora were collected — one per language — combining a downloaded
 source (IndicCorp v2) with manually scraped news and (for Nepali) Wikipedia text, then
 cleaned, deduplicated, safety-filtered, and split.
+
+## 1.0 Phase 1 pipeline
+
+```mermaid
+flowchart TD
+    A1[IndicCorp v2 download] --> C[Combine sources]
+    A2[News-site scraping] --> C
+    A3[Wikipedia scraping<br/>Nepali only] --> C
+    C --> D[Unicode NFC normalization +<br/>Devanagari script-ratio quality filter]
+    D --> E[Repetitive-document removal<br/>Gopher-style top-n-gram ratio]
+    E --> F[Safety filter<br/>profanity wordlist]
+    F --> G[Exact deduplication<br/>content-hash]
+    G --> H[Near-duplicate deduplication<br/>MinHash / LSH, manual sources only]
+    H --> I[Train / val / test split<br/>95% / 2.5% / 2.5%]
+    I --> J[Tokenizer vocab-size sweep<br/>5k/7k/9k/10k/16k/24k on held-out val]
+    J --> K[Final tokenizer<br/>SentencePiece BPE, vocab=10,000]
+```
 
 ## 1.1 Corpus statistics
 
@@ -63,6 +115,19 @@ perplexity comparison (Part II).
 ---
 
 # Part II — Phase 2: Model Architecture, Pretraining, and Evaluation
+
+## 2.0 Phase 2 pipeline
+
+```mermaid
+flowchart TD
+    A[Phase 1 train/val/test splits +<br/>trained tokenizer] --> B[Tokenize splits to uint16<br/>.bin arrays, prepare_data.py]
+    B --> C[Build GPTLanguageModel<br/>embeddings + RoPE + causal attention<br/>+ transformer blocks, from scratch]
+    C --> D[Pretrain: AdamW, linear warmup<br/>+ cosine decay, 30,000 steps,<br/>checkpoint every 1,000 steps]
+    D --> E[Pretrained checkpoint<br/>checkpoint_step30000.pt]
+    E --> F1[Intrinsic LM eval<br/>perplexity, bits-per-byte]
+    E --> F2[Generation quality eval<br/>BLEU-4, chrF++, ROUGE-L,<br/>greedy + temp 0.5/1.0/1.5]
+    E --> F3[Attention analysis<br/>heatmaps, entropy, mean distance]
+```
 
 ## 2.1 Architecture
 
@@ -154,6 +219,19 @@ against after Phase 3 finetuning.
 ---
 
 # Part III — Phase 3: Reasoning Finetuning and Attention Analysis
+
+## 3.0 Phase 3 pipeline
+
+```mermaid
+flowchart TD
+    A[Generate synthetic reasoning dataset<br/>pairwise / transitive3 / chain<br/>held-out entity names for test] --> B[Train / val / test .jsonl<br/>4,000 / 500 / 500 examples]
+    B --> C[Load Phase 2 pretrained checkpoint<br/>tokenizer/vocab kept fixed]
+    C --> D[Finetune: loss masked to<br/>answer span only, 1,000 steps]
+    D --> E[Finetuned checkpoint<br/>finetune_step1000.pt]
+    E --> F1[Reasoning accuracy eval<br/>pretrained vs. finetuned,<br/>exact match on held-out test set]
+    F1 --> F1b[Error analysis<br/>failure patterns, value-gap correlation]
+    E --> F2[Attention comparison<br/>pretrained vs. finetuned heatmaps,<br/>entropy, mean distance]
+```
 
 ## 3.1 What is the "synthetic dataset" and what did we build?
 
