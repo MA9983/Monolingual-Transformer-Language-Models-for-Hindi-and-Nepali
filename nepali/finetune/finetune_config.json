@@ -1,0 +1,16 @@
+{
+  "language": "nepali",
+  "batch_size": 32,
+  "learning_rate": 1e-4,
+  "weight_decay": 0.01,
+  "adam_beta1": 0.9,
+  "adam_beta2": 0.95,
+  "adam_eps": 1e-8,
+  "grad_clip_norm": 1.0,
+  "warmup_steps": 50,
+  "epochs": 8,
+  "eval_interval_steps": 25,
+  "checkpoint_interval_steps": 250,
+  "seed": 1337,
+  "_notes": "Finetuning starts from nepali/model/checkpoints/checkpoint_step30000.pt (Phase 2 pretrained). Lower learning_rate (1e-4 vs. pretraining's 3e-4) and lighter weight_decay (0.01 vs. 0.1) than pretraining, standard for finetuning an already-trained model. 4,000 train examples / batch_size=32 = 125 steps/epoch; 8 epochs -> 1,000 total steps, reasonable for a small templated synthetic dataset to converge without needing anywhere near pretraining's compute."
+}

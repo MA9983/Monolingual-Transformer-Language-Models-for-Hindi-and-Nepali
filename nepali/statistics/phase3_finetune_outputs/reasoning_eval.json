@@ -1,0 +1,85 @@
+{
+  "language": "nepali",
+  "n_test": 500,
+  "pretrained_accuracy": 0.0,
+  "finetuned_accuracy": 0.434,
+  "finetuned_accuracy_by_task_type": {
+    "transitive3": 0.4206896551724138,
+    "chain": 0.45930232558139533,
+    "pairwise": 0.4207650273224044
+  },
+  "qualitative_successes": [
+    {
+      "prompt": "तरबुजाको दाम 1816 रुपैयाँ छ, जबकि किताबको दाम 6479 रुपैयाँ छ। यी मध्ये कोबढी सस्तो छ?",
+      "answer": "तरबुजा",
+      "prediction": "तरबुजा",
+      "correct": true,
+      "task_type": "pairwise"
+    },
+    {
+      "prompt": "छाताको मूल्य 4336 रुपैयाँ, घडीको मूल्य 2723 रुपैयाँ, र नरिवलको मूल्य 7165 रुपैयाँ छ। यी मध्ये सबैभन्दा महँगो कुन हो?",
+      "answer": "नरिवल",
+      "prediction": "नरिवल",
+      "correct": true,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "विनोदको उमेर 22 वर्ष, सुजाताको उमेर 80 वर्ष, र हरिको उमेर 45 वर्ष छ। यी मध्ये सबैभन्दा जेठो को हो?",
+      "answer": "सुजाता",
+      "prediction": "सुजाता",
+      "correct": true,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "स्याउको संख्या 4, अनारको संख्या 95, र किताबको संख्या 27 छ। यी मध्ये सबैभन्दा बढी संख्या कसको हो?",
+      "answer": "अनार",
+      "prediction": "अनार",
+      "correct": true,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "स्याउको दाम 2494 रुपैयाँ छ, जबकि घडीको दाम 7048 रुपैयाँ छ। यी मध्ये कोबढी सस्तो छ?",
+      "answer": "स्याउ",
+      "prediction": "स्याउ",
+      "correct": true,
+      "task_type": "pairwise"
+    }
+  ],
+  "qualitative_failures": [
+    {
+      "prompt": "विकासको उचाइ 199 सेमी, अनिताको उचाइ 140 सेमी, र नारायणको उचाइ 179 सेमी छ। यी मध्ये सबैभन्दा अग्लो को हो?",
+      "answer": "विकास",
+      "prediction": "सीता",
+      "correct": false,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "नारायणको उचाइ 157 सेमी, दिलिपको उचाइ 177 सेमी, र लक्ष्मीको उचाइ 191 सेमी छ। यी मध्ये सबैभन्दा अग्लो को हो?",
+      "answer": "लक्ष्मी",
+      "prediction": "दिपक",
+      "correct": false,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "गोपाल, मंगल भन्दा कम छ। मंगल, लक्ष्मी भन्दा कम छ। गोपाल र लक्ष्मी मध्ये कोसँग बढी छ?",
+      "answer": "लक्ष्मी",
+      "prediction": "सरस्वती",
+      "correct": false,
+      "task_type": "chain"
+    },
+    {
+      "prompt": "अनिता, विकास भन्दा ठूलो छ। विकास, लक्ष्मी भन्दा ठूलो छ। अनिता र लक्ष्मी मध्ये को ठूलो हो?",
+      "answer": "अनिता",
+      "prediction": "अनिल",
+      "correct": false,
+      "task_type": "chain"
+    },
+    {
+      "prompt": "नारायण 160 सेमी अग्लो छ, जबकि गोपाल 152 सेमी अग्लो छ। यी मध्ये कोबढी अग्लो छ?",
+      "answer": "नारायण",
+      "prediction": "गणेश",
+      "correct": false,
+      "task_type": "pairwise"
+    }
+  ]
+}
