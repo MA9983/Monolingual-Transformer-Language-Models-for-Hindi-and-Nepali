@@ -1,0 +1,85 @@
+{
+  "language": "hindi",
+  "n_test": 500,
+  "pretrained_accuracy": 0.0,
+  "finetuned_accuracy": 0.65,
+  "finetuned_accuracy_by_task_type": {
+    "transitive3": 0.41379310344827586,
+    "chain": 1.0,
+    "pairwise": 0.5081967213114754
+  },
+  "qualitative_successes": [
+    {
+      "prompt": "मोहन, ललिता से कम है। ललिता, नेहा से कम है। मोहन और नेहा में कौन अधिक है?",
+      "answer": "नेहा",
+      "prediction": "नेहा",
+      "correct": true,
+      "task_type": "chain"
+    },
+    {
+      "prompt": "गौरव संजय से बड़ा है। संजय नेहा से बड़ा है। गौरव और नेहा में से कौन बड़ा है?",
+      "answer": "गौरव",
+      "prediction": "गौरव",
+      "correct": true,
+      "task_type": "chain"
+    },
+    {
+      "prompt": "नेहा की लंबाई 151 सेमी, ललिता की लंबाई 195 सेमी, और अशोक की लंबाई 170 सेमी है। इनमें सबसे लंबा कौन है?",
+      "answer": "ललिता",
+      "prediction": "ललिता",
+      "correct": true,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "तरबूज की क़ीमत 1816 रुपये है, जबकि किताब की क़ीमत 6479 रुपये है। इनमें से कौन सस्ता है?",
+      "answer": "तरबूज",
+      "prediction": "तरबूज",
+      "correct": true,
+      "task_type": "pairwise"
+    },
+    {
+      "prompt": "छाता की कीमत 4336 रुपये, घड़ी की कीमत 2723 रुपये, और नारियल की कीमत 7165 रुपये है। इनमें सबसे महंगा कौन है?",
+      "answer": "नारियल",
+      "prediction": "नारियल",
+      "correct": true,
+      "task_type": "transitive3"
+    }
+  ],
+  "qualitative_failures": [
+    {
+      "prompt": "संजय की लंबाई 199 सेमी, गौरव की लंबाई 140 सेमी, और अशोक की लंबाई 179 सेमी है। इनमें सबसे लंबा कौन है?",
+      "answer": "संजय",
+      "prediction": "राजेश",
+      "correct": false,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "अशोक की लंबाई 157 सेमी, टीना की लंबाई 177 सेमी, और नेहा की लंबाई 191 सेमी है। इनमें सबसे लंबा कौन है?",
+      "answer": "नेहा",
+      "prediction": "सुनीता",
+      "correct": false,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "अशोक की ऊंचाई 160 सेमी है, जबकि मोहन की ऊंचाई 152 सेमी है। इनमें से कौन ज्यादा लंबा है?",
+      "answer": "अशोक",
+      "prediction": "राजेश",
+      "correct": false,
+      "task_type": "pairwise"
+    },
+    {
+      "prompt": "ललिता की उम्र 13 साल, मोहन की उम्र 63 साल, और संजय की उम्र 58 साल है। इनमें सबसे बड़ा कौन है?",
+      "answer": "मोहन",
+      "prediction": "अरुण",
+      "correct": false,
+      "task_type": "transitive3"
+    },
+    {
+      "prompt": "संजय की ऊंचाई 186 सेमी है, जबकि नेहा की ऊंचाई 170 सेमी है। इनमें से कौन ज्यादा लंबा है?",
+      "answer": "संजय",
+      "prediction": "शोभा",
+      "correct": false,
+      "task_type": "pairwise"
+    }
+  ]
+}

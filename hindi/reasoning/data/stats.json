@@ -1,0 +1,21 @@
+{
+  "language": "hindi",
+  "seed": 1337,
+  "n_train": 4000,
+  "n_val": 500,
+  "n_test": 500,
+  "n_train_names": 40,
+  "n_test_names": 10,
+  "train_test_name_overlap": 0,
+  "task_type_counts": {
+    "chain": 1698,
+    "pairwise": 1706,
+    "transitive3": 1596
+  },
+  "attributes": [
+    "height",
+    "age",
+    "price",
+    "quantity"
+  ]
+}
