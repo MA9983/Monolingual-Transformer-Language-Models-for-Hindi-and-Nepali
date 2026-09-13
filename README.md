@@ -1,4 +1,4 @@
-# Building and Analyzing Monolingual Transformer LMs in Two Indian Languages
+# Building and Analyzing Monolingual Transformer LMs in Two Languages
 
 Individual project for *Language Models and Agents* (Monsoon 2026). The goal is to build,
 train, and analyze **two completely independent** decoder-only Transformer language models
@@ -17,6 +17,51 @@ normalization, script-ratio quality filtering) be reused safely without conflati
 languages' actual vocabularies or training data — every pipeline still runs fully
 independently per language.
 
+## What we actually did in each phase 
+
+The project had three phases, each building directly on the last. Here's what each one means
+in simple terms, before the detailed tables below.
+
+### Phase 1 — collecting text and building a "dictionary" for each language
+
+Before a language model can learn anything, it needs a large pile of real text to learn
+*from*, and a way to break that text into small, countable pieces (a "tokenizer"). So the
+first phase was: go get real Hindi text and real Nepali text (news articles, Wikipedia pages,
+plus a downloaded public dataset), clean it up (remove junk, duplicates, and unsafe content),
+and split it into training/validation/testing portions. Then, for each language separately,
+train a tokenizer — a tool that chops any sentence into a fixed vocabulary of ~10,000 small
+word-pieces, the "alphabet" the model actually reads and writes in. Nepali turned out to be
+genuinely harder to find enough good text for than Hindi (it needed an extra source,
+Wikipedia, on top of news scraping, just to catch up to a similar total size) — which is
+exactly why it was chosen as the "lower-resource" language for this project.
+
+### Phase 2 — building the actual model from scratch, and teaching it to write
+
+This phase built the language model itself — a Transformer, the same family of architecture
+behind tools like ChatGPT, but built here entirely from basic building blocks (no
+ready-made library did the hard part for us) and much smaller (~25 million adjustable
+numbers, versus billions in commercial models). Two completely separate copies of this model
+were trained — one that only ever saw Hindi text, one that only ever saw Nepali text — each
+learning to predict "what word comes next" over and over, hundreds of millions of times,
+until it could produce fluent-sounding sentences on its own. Afterwards, both models were
+tested: how well do they predict real held-out text, how good is the text they generate, and
+— since we built the attention mechanism ourselves — what does looking inside the model's
+"attention" (which words it focuses on while reading) actually reveal?
+
+### Phase 3 — teaching a specific skill (reasoning) and checking if it really learned it
+
+A general language model that writes fluent sentences doesn't automatically know how to
+*reason* — e.g. answering "who is older, given two ages?" reliably. So this phase built a
+small practice dataset of comparison questions (made up by a script, so the correct answers
+are always known for certain — see below), and gave each model some extra, focused training
+on just that skill, starting from where Phase 2 left off. Crucially, the test questions used
+people/objects the model had *never seen* during this extra training, specifically so we could
+tell whether it actually learned to compare numbers, rather than just memorizing answers.
+Both models went from getting 0% of these questions right (before this extra training) to a
+real, meaningful accuracy afterward — genuine evidence of learning, not memorization — and we
+also compared what the model's attention looked like before vs. after this extra training to
+see how it changed.
+
 ## Project status
 
 - **Phase 1 (Data Collection and Tokenizer Construction) — complete.** See
@@ -27,7 +72,34 @@ independently per language.
   evaluated (intrinsic LM metrics, generation quality, attention analysis). See
   [`report/phase2_report.md`](report/phase2_report.md) for full methodology, results, and
   analysis.
-- **Phase 3 (Reasoning Finetuning, Attention Analysis, Final Report)** — not started yet.
+- **Phase 3 (Reasoning Finetuning, Attention Analysis, Final Report) — complete.** Both
+  models finetuned independently on their own synthetic reasoning dataset, evaluated
+  (pretrained vs. finetuned accuracy, error analysis), and their attention re-analyzed
+  post-finetune. This was also the final project deadline — see
+  [`report/phase3_report.md`](report/phase3_report.md), which is now the **consolidated
+  final report for the whole project** (Phases 1-3 together), for full methodology, results,
+  and analysis.
+
+### Phase 3 results at a glance
+
+| | Model H (Hindi) | Model L (Nepali) |
+|---|---:|---:|
+| Reasoning accuracy, pretrained-only | 0.0% | 0.0% |
+| **Reasoning accuracy, finetuned** | **65.0%** | **43.4%** |
+| — pairwise / transitive3 / chain | 50.8% / 41.4% / 100.0% | 42.1% / 42.1% / 45.9% |
+| Attention entropy shift (pretrained→finetuned) | 2.168→1.932 bits (↓) | 2.380→2.020 bits (↓) |
+| Attention distance shift (pretrained→finetuned) | 4.222→4.690 (↑) | 4.514→5.269 (↑) |
+
+Both models go from 0% (never taught to answer with a bare short name) to real,
+above-chance accuracy on entity names **never seen during finetuning** — genuine evidence of
+learned reasoning, not memorization. Hindi generalizes better overall, especially on chain
+(multi-hop) reasoning. Both models show the same attention shift after finetuning — more
+focused, longer-range — with Nepali's shift actually the larger of the two despite its lower
+accuracy, and error analysis shows both languages fail in the same specific way (a
+well-formed but wrong entity name, not garbled output). Full dataset design, error analysis,
+per-layer attention breakdown, and the final synthesis answering the assignment's four
+required comparison questions are in
+[`report/phase3_report.md`](report/phase3_report.md).
 
 ### Phase 2 results at a glance
 
@@ -157,9 +229,19 @@ hindi/                       Model H — fully self-contained (no cross-imports 
                                  eval), attention_analysis.py, plotting.py
   model/checkpoints/          Trained checkpoint (gitignored, 287MB — see Google Drive links
                                  below)
+  reasoning/                  generate_reasoning_data.py (synthetic comparative-reasoning
+                                 dataset, seeded/reproducible) + data/{train,val,test}.jsonl
+  finetune/                   dataset.py (prompt-masked-loss dataset), finetune_trainer.py,
+                                 finetune_config.json, run_finetune.py, run_reasoning_eval.py
+                                 (pretrained-vs-finetuned exact-match accuracy),
+                                 run_attention_comparison.py (pretrained-vs-finetuned
+                                 attention), checkpoints/ (gitignored, 287MB)
   statistics/
     phase2_eval_outputs/      Training logs, loss curves, PPL/BPB + generation results,
                                  attention heatmaps/entropy/distance, all figures (tracked)
+    phase3_finetune_outputs/  Finetuning logs/loss curve, reasoning accuracy + qualitative
+                                 examples, pretrained-vs-finetuned attention comparison,
+                                 all figures (tracked)
 
 nepali/                      Model L — mirrors hindi/ exactly, fully independent
 
@@ -174,6 +256,7 @@ report/
                                  + PNG) — the only Phase 2 plot needing both languages' results
                                  at once, so it's generated locally, not inside either
                                  language's single-language Kaggle run
+  phase3_report.md             Final consolidated report (Phases 1-3), submitted with Phase 3
 
 kaggle_upload/                Kaggle API automation: credentials (gitignored), the training
                                  notebook, and per-language kernel-push folders used to run
@@ -208,6 +291,16 @@ notebook's checkpoint-resume logic):
 
 - Hindi (Model H): https://www.kaggle.com/datasets/mohdahmad2868/phase2-hindi-checkpoint-30000
 - Nepali (Model L): https://www.kaggle.com/datasets/mohdahmad2868/phase2-nepali-checkpoint-30000
+
+### Model checkpoints (Phase 3, finetuned)
+
+Both models' finetuned checkpoints (reasoning task, step 1,000) are on **Google Drive**:
+
+- Hindi (Model H): https://drive.google.com/file/d/1j3HOQ5raj6kDGfZbnZHscz5p1rChyDz7/view?usp=sharing
+- Nepali (Model L): https://drive.google.com/file/d/1stI-hw8dCYdtc850B7JEq6cLCIzedfuR/view?usp=sharing
+
+Same checkpoint schema as Phase 2 (see below), just finetuned from the Phase 2 pretrained
+checkpoint on each language's synthetic reasoning dataset instead of trained from scratch.
 
 **Checkpoint format** (both languages, identical schema — see `Trainer.save_checkpoint` /
 `load_checkpoint` in `hindi/train/trainer.py`): each `checkpoint_step<N>.pt` is a single
@@ -324,18 +417,50 @@ Architecture, training, and evaluation code is fully duplicated per language (no
 Full results, all figures, and the complete written analysis are in
 [`report/phase2_report.md`](report/phase2_report.md).
 
-Phase 3 (reasoning finetuning and attention analysis) reproduction steps will be added here
-once that phase is completed.
+## Reproduction steps (Phase 3)
+
+Reasoning data, finetuning, and evaluation code is fully duplicated per language (no shared
+`reasoning`/`finetune` module), same independence rule as Phases 1-2.
+
+1. **Generate the synthetic reasoning dataset** (deterministic, seed=1337 — comparative and
+   transitive/chain reasoning questions with numeric attributes, natural in-language
+   phrasing, held-out entity names for the test split so it can't be passed by memorization):
+   ```bash
+   python3 hindi/reasoning/generate_reasoning_data.py
+   python3 nepali/reasoning/generate_reasoning_data.py
+   ```
+2. **Finetune** from each language's Phase 2 pretrained checkpoint (loss computed only on the
+   answer span, not the question; checkpoint-resume in the same format as pretraining):
+   ```bash
+   python3 hindi/finetune/run_finetune.py
+   python3 nepali/finetune/run_finetune.py
+   ```
+3. **Evaluate pretrained-vs-finetuned exact-match accuracy** on the held-out test set:
+   ```bash
+   python3 hindi/finetune/run_reasoning_eval.py
+   python3 nepali/finetune/run_reasoning_eval.py
+   ```
+4. **Compare pretrained-vs-finetuned attention** on a comparative-reasoning prompt (reuses
+   the Phase 2 attention toolkit unchanged, just pointed at both checkpoints):
+   ```bash
+   python3 hindi/finetune/run_attention_comparison.py
+   python3 nepali/finetune/run_attention_comparison.py
+   ```
+
+All outputs land in `*/statistics/phase3_finetune_outputs/`; finetuning hyperparameters are
+documented in `*/finetune/finetune_config.json`. Full results, error analysis, and the final
+project synthesis are in [`report/phase3_report.md`](report/phase3_report.md).
 
 ## Known limitations / pending work
 
 - **Generation-quality evaluation** now uses real held-out prefix/reference pairs sampled from
-  each language's `data/splits/test.txt` (fixed as of this report), scored under greedy
-  decoding and temperatures 0.5/1.0/1.5 — see `report/phase2_report.md` Section 4 for the
-  methodology and a concrete finding (a greedy-decoding mode-collapse pattern specific to
-  Model L).
+  each language's `data/splits/test.txt`, scored under greedy decoding and temperatures
+  0.5/1.0/1.5 — see `report/phase2_report.md` Section 4 for the methodology and a concrete
+  finding (a greedy-decoding mode-collapse pattern specific to Model L).
 - **Attention-head local/content-based discussion** is written up quantitatively in
   `report/phase2_report.md` Section 5 (entropy/distance grid analysis), not just the raw
   heatmap images.
-- Phase 3 (reasoning finetuning, post-finetune attention comparison, final consolidated
-  report) has not started.
+- **Neither model gets close to 100% on the harder reasoning task types** (pairwise,
+  transitive3) — expected for a 25M-parameter model doing precise numeric comparison; see
+  `report/phase3_report.md` Section 3.4 for the error-analysis evidence (a well-formed but
+  wrong entity, correlated with closer numeric values) explaining why.
