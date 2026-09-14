@@ -1,0 +1,19 @@
+{
+  "language": "hindi",
+  "ablation": "no_positional_embeddings",
+  "vocab_size": 10000,
+  "d_model": 512,
+  "n_layers": 6,
+  "n_heads": 8,
+  "d_ff": 2208,
+  "context_length": 256,
+  "embed_dropout": 0.1,
+  "attn_dropout": 0.1,
+  "resid_dropout": 0.1,
+  "tie_embeddings": true,
+  "positional_encoding": "none",
+  "activation": "gelu",
+  "norm_placement": "pre-norm",
+  "_num_parameters_verified": 25019328,
+  "_num_parameters_verified_note": "Identical parameter count to the standard hindi/configs/model_config.json (RoPE has zero learnable parameters, so removing it does not change the count at all) -- verified via GPTLanguageModel.num_parameters() on this ablated architecture. This is otherwise the exact same architecture as hindi/'s real model (same d_model, n_layers, n_heads, d_ff, context_length, tying), trained on the same Hindi tokenizer and data, with the sole change being bonus/model/attention.py has the RoPE rotation deleted entirely -- a single-variable ablation."
+}
