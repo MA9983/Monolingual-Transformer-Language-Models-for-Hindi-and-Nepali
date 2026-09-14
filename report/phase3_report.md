@@ -550,3 +550,189 @@ python3 nepali/finetune/run_attention_comparison.py
 
 All outputs land in `*/statistics/phase3_finetune_outputs/`. Finetuning configs (learning
 rate, epochs, etc.) are documented in `*/finetune/finetune_config.json`.
+
+---
+
+# Bonus (Optional) — Ablation: No Positional Embeddings
+
+Per the assignment's optional bonus, one language (**Hindi**) was retrained with positional
+information removed entirely, and compared against the standard model on the full Phase 2
+evaluation suite. This is kept in a separate top-level `bonus/` folder — not inside `hindi/`
+— so it's never confused with the main graded architecture; per the assignment, this ablation
+is explicitly *not* part of the main graded project.
+
+## B.1 What was actually changed
+
+**Exactly one thing, and nothing else.** `bonus/model/attention.py` is a copy of
+`hindi/model/attention.py` with the RoPE rotation deleted — no `rope.py` import, no
+`self.rope`, no rotation applied to Q/K before the attention scores are computed. Every other
+line (Q/K/V projections, head reshaping, `1/sqrt(d_head)` scaling, causal masking, output
+projection) is unchanged, and every other file (`embeddings.py`, `block.py`, `gpt.py`) is
+untouched. `d_model=512`, `n_layers=6`, `n_heads=8`, `d_ff=2208`, `context_length=256`, same
+tokenizer, same Hindi training data, same training hyperparameters (30,000 steps, AdamW,
+warmup+cosine) as the standard model — the only variable that differs is whether queries and
+keys carry any positional signal at all.
+
+**Parameter count**: identical, **25,019,328** — RoPE has zero learnable parameters (it's a
+fixed rotation computed from position, not a trained weight), so removing it doesn't change
+the model's capacity or size in any way. This keeps the comparison to genuinely one variable.
+
+**What breaks in principle, before even running it**: self-attention itself has no built-in
+sense of order — computing `softmax(QK^T / sqrt(d_head))V` treats the input as an unordered
+*set* of tokens, not a *sequence*, unless something (RoPE, learned positional embeddings,
+sinusoidal encodings) tells it where each token sits. With that removed, the model can still
+use word *identity* and *co-occurrence* to predict the next token (which is why it won't fail
+completely), but it loses any notion of *word order*, *distance between words*, or *which
+occurrence of a repeated word* is being referred to — for example, it cannot distinguish
+"राम ने श्याम को मारा" (Ram hit Shyam) from "श्याम ने राम को मारा" (Shyam hit Ram): both contain
+the identical set of tokens, and only word order tells you who did what to whom.
+
+## B.2 Results: standard Hindi model vs. no-positional-embeddings ablation
+
+Both models trained for the identical 30,000 steps on the identical Hindi data.
+
+| Metric | Standard Hindi | No-positional-embeddings ablation | Change |
+|---|---:|---:|---:|
+| Perplexity | 24.24 | 27.23 | +12% (mild) |
+| Bits-per-byte | 0.4665 | 0.4836 | +3.7% (mild) |
+| **BLEU-4** (greedy) | 38.34 | **4.21** | **−89% (collapse)** |
+| **chrF++** (greedy) | 48.94 | **25.38** | **−48% (collapse)** |
+| **ROUGE-L** (greedy) | 0.242 | **0.0** | **complete collapse** |
+| Distinct-1 / Distinct-2 | 0.300 / 0.548 | 0.571 / 0.792 | higher (see B.3 — not a genuine improvement) |
+| Repetition rate (4-gram) | 0.013 | 0.036 | higher |
+| Mean attention entropy | 1.046 bits | 1.079 bits | ~unchanged |
+| Mean attention distance | ~0.99 | 1.011 | ~unchanged |
+
+**The split is stark and informative**: perplexity and bits-per-byte — both *average, single-next-token*
+prediction quality measures — degrade only mildly. But BLEU-4, chrF++, and ROUGE-L — all of
+which score an entire *multi-token generated sequence* against a reference — collapse
+completely. This gap is itself evidence for what position information is actually for: it
+barely matters for guessing the *single* most likely next word most of the time (which is
+often obvious from local word co-occurrence alone), but is essential for producing a
+*coherent multi-word sequence* that holds together over many steps.
+
+**Qualitative sample (greedy decoding, ablated model)**:
+> प्रधानमंत्री ने आज → *"...लखनऊ लखनऊ लखनऊ लखनऊ में कोरोना से संक्रमित मरीजों की संख्या..."*
+
+The model repeats **"लखनऊ" (Lucknow) four times in a row** — something the standard model
+never does. This is a direct, visible symptom: without a positional signal, the model has no
+reliable way to track "I already just produced this word," so it can loop on a locally
+plausible word repeatedly. This also explains the counter-intuitive **higher** Distinct-1/2
+scores in the table above: those metrics count *unique* n-grams over the *whole* generated
+sample, and don't penalize *local, bursty* repetition (four "लखनऊ" in a row still only costs
+one repeated n-gram in a global uniqueness count) — so "more diverse but also more
+repetitive" is not a contradiction, it describes the same degenerate pattern from two angles.
+
+**The genuinely surprising finding — attention heatmaps look qualitatively similar anyway**:
+
+![Ablated model, layer 0 head 0](../bonus/statistics/attn_heatmap_layer0_head0.png)
+![Ablated model, layer 5 head 0](../bonus/statistics/attn_heatmap_layer5_head0.png)
+
+Both the aggregate entropy/distance numbers *and* the heatmap shapes for the ablated model are
+close to the standard model's (Part II.5) — early-layer near-self-attention, late-layer
+routing back to the sentence's first token (भारत). This is not what a naive prediction would
+expect ("no position → attention pattern should look random/uniform"), and it has a concrete
+explanation: **causal masking itself leaks a weak, implicit positional signal**, even with zero
+explicit positional encoding. A query at the *first* position can only ever see one key (itself);
+a query at the *last* position can see all five — the sheer number of valid keys available differs
+by position, which is itself a (crude) function of position. On a short, 5-token example sentence,
+that alone is enough for the model to partially reconstruct "early vs. late in the sentence,"
+producing a heatmap that looks superficially similar to the standard model's. What this
+implicit signal is clearly *not* enough for is precise word-order tracking over a longer
+generated sequence — which is exactly where BLEU/chrF/ROUGE and the repetition failure above
+show the real breakdown.
+
+**Breaking the comparison down layer by layer** shows the aggregate numbers above are hiding a
+real, systematic shift, not just noise:
+
+| Layer | Entropy: standard → ablated | Distance: standard → ablated |
+|---:|---:|---:|
+| 0 (earliest) | 0.913 → **0.656** (lower) | 0.885 → **0.440** (much lower) |
+| 1 | 1.052 → 1.126 | 0.919 → 0.983 |
+| 2 | 1.043 → **1.247** (higher) | 0.895 → **1.131** (higher) |
+| 3 | 1.132 → **1.247** (higher) | 1.102 → **1.223** (higher) |
+| 4 | 1.068 → 1.077 | 1.089 → 1.075 |
+| 5 (latest) | 1.067 → 1.124 | 1.072 → 1.210 |
+
+Without positional embeddings, **layer 0 becomes even more tightly self-focused** than in the
+standard model (distance nearly halves, 0.885→0.440) — with no positional cue to work with,
+the earliest layer has even less basis for looking anywhere but the current token itself.
+**Layers 2-3 compensate by becoming more diffuse and longer-range** than their standard-model
+counterparts, as if searching more broadly for content-based associations to substitute for
+the relative-position shortcut RoPE would normally provide. So the model isn't just "attending
+the same way, minus position" — it's visibly *reorganizing which layers do what* to partially
+compensate, even though (per B.2) that compensation isn't enough to rescue generation quality.
+
+## B.3 What broke without position information
+
+Bringing B.1's theoretical prediction and B.2's actual results together:
+
+1. **Word-order sensitivity is gone.** Self-attention without any positional signal treats a
+   sentence as an unordered set of tokens — the model can still use *which words co-occur*, but
+   not *in what order*, so it cannot reliably distinguish "राम ने श्याम को मारा" from
+   "श्याम ने राम को मारा." This doesn't show up much in perplexity (predicting *a* plausible
+   next word from context is still largely solvable from co-occurrence alone) but shows up
+   completely in BLEU/chrF/ROUGE-L, which specifically score whether generated text matches a
+   reference **in the right order** — hence the 89% BLEU-4 collapse despite only a 12%
+   perplexity increase.
+2. **The model can't reliably track "what have I already said."** The repeated
+   "लखनऊ लखनऊ लखनऊ लखनऊ" failure is the direct, visible symptom: normally, position lets the
+   model represent "this is the 4th word I've generated" distinctly from "this is the 5th," so
+   it doesn't confuse where it is in its own output. Without that, the model can loop on a
+   locally-plausible word.
+3. **What *doesn't* break**: local, single-step word prediction stays largely intact (mild PPL/BPB
+   degradation), and even the attention *pattern* on a short example looks superficially similar
+   to the standard model, because causal masking alone leaks a weak implicit positional cue (the
+   number of valid keys a query can see grows with position). This is not a strong enough signal
+   to support coherent multi-step generation, but it is enough to partially mimic the standard
+   model's early-local/late-global attention shape on short inputs — a genuinely informative,
+   non-obvious result: the *headline* failure of this ablation is in **generation quality**, not
+   in the attention visualization itself.
+
+**Bottom line**: positional embeddings are not needed for a Transformer to guess plausible individual
+words from context, but they are essential for producing fluent, non-repetitive, correctly-ordered
+multi-word text — exactly the distinction this ablation makes directly visible, on the same data,
+same architecture otherwise, same training budget as the standard Hindi model.
+
+## B.4 Reproducibility
+
+```bash
+# Ablated architecture (RoPE deleted from attention.py, everything else identical)
+bonus/model/{embeddings,attention,block,gpt}.py
+
+# Trained on Kaggle (same hindi-processed-dataset, same training_config.json, 30,000 steps):
+# kaggle_upload/kernel_push_bonus/, using bonus/train/{prepare_data,dataset,trainer}.py
+
+# Post-training evaluation (PPL/BPB, generation quality) ran inside the same Kaggle notebook,
+# reusing bonus/eval/{lm_metrics,generation_metrics}.py unchanged.
+
+# Attention analysis (re-run locally against the downloaded checkpoint):
+python3 bonus/eval/run_attention_analysis.py
+```
+
+Checkpoint: `bonus/checkpoints/checkpoint_step30000.pt` (gitignored, same schema as the
+standard model's checkpoints). Full config: `bonus/configs/model_config.json`.
+
+## B.5 In plain terms — what this experiment actually shows
+
+- Take the real, working Hindi model from Phase 2, delete exactly one thing (the mechanism
+  that tells it where each word sits in a sentence), change nothing else, and train it the
+  same way on the same data. What happens?
+- **It still sounds okay for a single next word.** Ask it to guess one plausible next word
+  given some context, and it does that only slightly worse than before (perplexity up ~12%).
+  That's because guessing one likely word from nearby words doesn't strictly require knowing
+  word *order* — just which words tend to appear near each other.
+- **But ask it to write several words in a row, and it falls apart.** The standard model's
+  BLEU score (how closely generated text matches a real reference, word by word, in order)
+  was 38.3; this one scores 4.2 — a collapse, not a dip. And watching it generate text directly
+  shows exactly why: it gets stuck repeating the same word four times in a row
+  ("लखनऊ लखनऊ लखनऊ लखनऊ"), because without a sense of position it can't reliably tell that it
+  already just said that word.
+- **Even its internal attention reorganizes to cope** — the earliest layer becomes even more
+  narrowly self-focused, while the middle layers spread out further, as if trying to find
+  another way to recover some sense of structure. It's a real, visible adaptation — just not
+  one that's good enough to fix the underlying problem.
+- **The takeaway**: positional information isn't needed for a language model to sound locally
+  fluent for a word or two, but it's essential for holding a whole sentence together correctly
+  — which is exactly the kind of thing this single, controlled change makes directly visible,
+  rather than just theoretically expected.
