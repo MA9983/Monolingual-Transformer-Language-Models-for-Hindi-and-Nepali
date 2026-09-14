@@ -1,0 +1,18 @@
+{
+  "id": "mohdahmad2868/bonus-nopos-ablation-training",
+  "title": "bonus-nopos-ablation-training",
+  "code_file": "phase2_train_eval.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "mohdahmad2868/bonus-nopos-ablation-code",
+    "mohdahmad2868/hindi-processed-dataset"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}
